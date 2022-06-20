@@ -16,7 +16,7 @@ The resulting binary is `target/release/iascar`
 
 ## Usage
 The following describes each use case of iascar.
-### Example 1 (Incremental Answer Set Counting with Anytime Refinement)
+### Example 1 (**Incremental Answer Set Counting with Anytime Refinement**)
 Let `example.lp` be the following program:
 ```prolog
 a :- not b.
