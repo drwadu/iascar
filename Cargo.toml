@@ -16,3 +16,7 @@ rug = "1.16.0"
 itertools = "0.4.9"
 thiserror = "1.0.30"
 rayon = "1.5"
+
+[features]
+no_overcounting = []
+sequential_early_termination = []

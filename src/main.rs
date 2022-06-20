@@ -32,6 +32,7 @@ fn main() {
 
     let mut flags = inputs[..split_idx].iter();
     let mut rest = inputs[split_idx..].iter();
+    let mut rest_ = inputs[split_idx..].iter();
     let flag = flags.next();
 
     let assumptions = match matches!(flags.next().map(String::as_str), Some("-a"))
@@ -75,29 +76,33 @@ fn main() {
             println!("{:?}", counting::count_on_sddnnf(nnf_file, &assumptions));
         }
         Some("-cnnfasp") => {
-            println!("{:?}", counting::count_on_sddnnf_asp(nnf_file, &assumptions));
+            println!(
+                "{:?}",
+                counting::count_on_sddnnf_asp(nnf_file, &assumptions)
+            );
         }
         Some("-as") => {
             let mut dpcs_file = nnf_file.clone();
             dpcs_file = format!(
                 "{}.cycles",
-                dpcs_file
-                    .split('.')
-                    .next()
-                    .expect("no .dpcs found.")
+                dpcs_file.split('.').next().expect("no cycles file found.")
             );
-            let dpcs = read_to_string(dpcs_file).expect("unkown error.");
+            let dpcs = read_to_string(dpcs_file).expect("error occurred during reading cycles.");
             let mut lines = dpcs.lines();
             let no_bounding = lines
                 .next()
                 .and_then(|l| l.split_whitespace().next())
                 .map(|n| usize::from_str(n).ok())
-                .unwrap() // TODO
+                .expect("invalid cycles file")
                 == Some(0);
+            let depth = rest_
+                .next()
+                .map_or(Some(0), |n| usize::from_str(n).ok())
+                .expect("error occurred during reading alternation depth.");
             if !no_bounding {
                 println!(
                     "{:?}",
-                    counting::count_on_cg_with_cycles(nnf_file, lines, &assumptions, 0)
+                    counting::count_on_cg_with_cycles(nnf_file, lines, &assumptions, depth)
                 );
             } else {
                 println!("{:?}", counting::count_on_cg(nnf_file, &assumptions));
