@@ -1,4 +1,3 @@
-use crate::{AND, OR};
 use clingo::{Control, Literal, Part};
 use rug::Integer;
 use std::collections::{HashMap, HashSet};
@@ -6,6 +5,9 @@ use std::fs::read_to_string;
 use std::io::Write;
 use std::str::FromStr;
 use thiserror::Error;
+
+pub const AND: u8 = 1;
+pub const OR: u8 = 0;
 
 #[derive(Error, Debug)]
 pub enum TranspilerError {
@@ -19,8 +21,8 @@ pub enum TranspilerError {
 
 pub type Result<T> = std::result::Result<T, TranspilerError>;
 
-pub fn transpile(nnf_file: String) -> Result<()> {
-    let name = nnf_file.split('.').next().ok_or(TranspilerError::None)?;
+pub fn transpile(nnf_path: String) -> Result<()> {
+    let name = nnf_path.split('.').next().ok_or(TranspilerError::None)?;
     let lp_path = &format!("{}.lp", name);
 
     let cnf_mappings = read_cnf_mappings(name)?;
@@ -60,7 +62,7 @@ pub fn transpile(nnf_file: String) -> Result<()> {
         })
         .collect::<Vec<_>>();
 
-    let nnf = read_to_string(&nnf_file).unwrap_or_else(|_| "".to_string());
+    let nnf = read_to_string(&nnf_path).unwrap_or_else(|_| "".to_string());
 
     let mut lines = nnf.lines();
     let node_count = lines

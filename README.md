@@ -8,11 +8,16 @@ to count the number of a models of classic formula (see Example 3), as in the en
 - either an sd-DNNF in the format as defined in the archive of c2d available from [http://reasoning.cs.ucla.edu/c2d/](); or 
 - a counting graph in [this format]().
 
-## Build
+## Build 
 ```console
 iascar$ cargo build --release
 ```
 The resulting binary is `target/release/iascar`
+
+## Install 
+```console
+$ cargo install iascar
+```
 
 ## Usage
 The following describes each use case of iascar.

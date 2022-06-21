@@ -192,7 +192,6 @@ pub fn count_on_cg_with_cycles(
     assumptions: &[i32],
     mut depth: usize,
 ) -> Integer {
-    dbg!(depth);
     let cycles_file = cycles.collect::<Vec<_>>();
     let cycles_mappings = cycles_file.iter().filter(|l| l.starts_with("c "));
     let mut ccg_mappings: HashMap<String, i32> = HashMap::new();
@@ -227,7 +226,7 @@ pub fn count_on_cg_with_cycles(
     let mut count = count_on_ccg(&ccg_nodes, assumptions);
 
     if depth > 0 {
-        #[cfg(feature = "no_overcounting")]
+        #[cfg(feature = "no_undercounting")]
         #[allow(unused_assignments)]
         {
             if depth % 2 != 0 {
@@ -238,7 +237,6 @@ pub fn count_on_cg_with_cycles(
                 }
             }
         }
-        dbg!(depth);
 
         // if in first alternation, then overlaps of two exlusion routes (inclusion routes of size two)
         // take routes until alternation depth
@@ -246,11 +244,9 @@ pub fn count_on_cg_with_cycles(
         let mut m = 0;
         let mut routes = vec![];
         for l in cycles_file.iter().skip(1).filter(|l| !l.starts_with('c')) {
-            dbg!(m);
             if m == depth {
                 break;
             }
-            dbg!(&l);
             match l.starts_with('m') {
                 true => {
                     routes.push((
@@ -318,7 +314,6 @@ pub fn count_on_cg_with_cycles(
                 .collect::<Vec<_>>();
 
             for (s, c) in counts {
-                dbg!(&count);
                 if *s == 0 {
                     count -= c;
                 } else {
@@ -332,9 +327,6 @@ pub fn count_on_cg_with_cycles(
             let mut count_ = Integer::from(0);
             let mut s_ = &0;
             for (s, r) in routes.iter() {
-                dbg!(&count);
-                dbg!(&count_);
-                dbg!(&s);
                 let mut delta = assumptions.to_vec().clone();
                 delta.extend(r);
                 let a = count_on_ccg(&ccg_nodes, &delta);

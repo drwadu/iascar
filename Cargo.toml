@@ -4,10 +4,9 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Dominik Rusovac <dominik.rusovac@hotmail.com>"]
 readme = "README.md"
-description = "Rust Port of the iascar counter and transpiler"
+description = "Rust Port of the iascar counter"
 repository = "https://github.com/drwadu/soe"
 keywords = ["propositional model counting", "answer set programming", "logic programming"]
-categories = ["mathematics"]
 license = "LGPL-2.1"
 
 [dependencies]
@@ -18,5 +17,5 @@ thiserror = "1.0.30"
 rayon = "1.5"
 
 [features]
-no_overcounting = []
+no_undercounting = []
 sequential_early_termination = []
