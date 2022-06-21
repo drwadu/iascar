@@ -77,12 +77,12 @@ iascar$ target/release/iascar examples/p_xor_q.cnf.nnf -cnnf -a 1 -2
 ![](examples/ima_d3cc8bb.png)
 
 A file in CCG format encodes a (compressed) counting graph such that 
-- the first line $~\text{ccg } v~e~n~c~$ denotes
+- the first line $\text{ccg } v$ $e$ $n$ $c$ denotes
     - $v \dots$ number of nodes; 
     - $e \dots$ number of edges; 
     - $n \dots$ number of variables;
-    - and $c \dots$ model count under no assumptions in $\text{log}_{10}$;
+    - and $c \dots$ model count under no assumptions in log<sub>$10$</sub>;
 - comments (e.g., literal mappings) start with character c;
-- lines $~i~b~$ consisting of an integer $i$ and $b \in \{0,1\}$ correspond to a literal node labeled with literal $i$ and value $b$;
-- lines $~*~j~k_1 \dots~k_j$ corresponding to a product (and-node) consisting of the number of children $j$ and the respective line indices of the children $~k_1 \dots~k_j$;
-- and lines $~+~j~k_1 \dots~k_j$ corresponding to a sum (or-node) consisting of the number of children $j$ and the respective line indices of the children $~k_1 \dots~k_j$.
+- lines $i$ $b$ consisting of an integer $i$ and $b \in \{0,1\}$ correspond to a literal node labeled with literal $i$ and value $b$;
+- lines $*$ $j$ $k$<sub>1</sub> $\dots k$<sub>$j$</sub> corresponding to a product (and-node) consisting of the number of children $j$ and the respective line indices of the children $k$<sub>$1$</sub> $\dots k$<sub>$j$</sub>;
+- and lines $+$ $j$ $k$<sub>$1$</sub> $\dots k$<sub>$j$</sub> corresponding to a sum (or-node) consisting of the number of children $j$ and the respective line indices of the children $k$<sub>$1$</sub> $\dots k$<sub>$j$</sub>.
