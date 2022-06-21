@@ -10,12 +10,29 @@ enum ExampleError {
 const EXAMPLE_LP: &str = "examples/example_lp";
 
 fn main() -> Result<()> {
+    let nnf_path = "examples/p_xor_q.cnf.nnf";
+    println!("reading from: {}", &nnf_path);
+    let count = iascar::counting::count_on_sddnnf(&nnf_path, &[]);
+    println!("counting {:?} models", count);
+    let assumptions = &[1, -2];
+    let count = iascar::counting::count_on_sddnnf(&nnf_path, assumptions);
+    println!(
+        "counting {:?} models under assumptions {:?}",
+        count, assumptions
+    );
+    let assumptions = &[-1, 2];
+    let count = iascar::counting::count_on_sddnnf(&nnf_path, assumptions);
+    println!(
+        "counting {:?} models under assumptions {:?}",
+        count, assumptions
+    );
+    println!("--------------------------------------------------------------------------------------------------------------");
     let nnf_path = format!("{}.nnf", EXAMPLE_LP);
     println!("reading from: {}", &nnf_path);
     let assumptions = &[7, -12];
-    let count = iascar::counting::count_on_sddnnf(&nnf_path, &[]);
+    let count = iascar::counting::count_on_sddnnf_asp(&nnf_path, &[]);
     println!("counting {:?} supported models", count);
-    let count = iascar::counting::count_on_sddnnf(nnf_path, assumptions);
+    let count = iascar::counting::count_on_sddnnf_asp(nnf_path, assumptions);
     println!(
         "counting {:?} supported models under assumptions {:?}",
         count, assumptions

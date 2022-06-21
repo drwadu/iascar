@@ -20,7 +20,7 @@ $ cargo install iascar
 ```
 
 ## Usage
-The following describes each use case of iascar.
+The following describes each use case of iascar using [`example_lp.lp`](examples/example_lp.lp)
 ### Example 1 (**Incremental Answer Set Counting with Anytime Refinement**)
 Let `example.lp` be the following program:
 ```prolog
