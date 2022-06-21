@@ -1,4 +1,5 @@
 use crate::utils::ToHashSet;
+#[cfg(not(feature = "sequential_early_termination"))]
 use rayon::prelude::*;
 use rug::Integer;
 use std::collections::HashMap;
@@ -346,51 +347,51 @@ pub fn count_on_cg_with_cycles(
             }
         }
     } else {
-        let mut ms = vec![];
-        let mut ps = vec![];
-        cycles_file
-            .iter()
-            .skip(1)
-            .filter(|l| !l.starts_with('c'))
-            .for_each(|l| match l.starts_with('m') {
-                true => ms.push(
-                    l.split(' ')
-                        .skip(1)
-                        .filter_map(|i| {
-                            i32::from_str(i)
-                                .map(|l| {
-                                    if l < 0 {
-                                        mappings.get(&l.abs()).map(|j| -j)
-                                    } else {
-                                        mappings.get(&l).copied()
-                                    }
-                                })
-                                .ok()
-                        })
-                        .flatten()
-                        .collect::<Vec<_>>(),
-                ),
-                _ => ps.push(
-                    l.split(' ')
-                        .skip(1)
-                        .filter_map(|i| {
-                            i32::from_str(i)
-                                .map(|l| {
-                                    if l < 0 {
-                                        mappings.get(&l.abs()).map(|j| -j)
-                                    } else {
-                                        mappings.get(&l).copied()
-                                    }
-                                })
-                                .ok()
-                        })
-                        .flatten()
-                        .collect::<Vec<_>>(),
-                ),
-            });
-
         #[cfg(not(feature = "sequential_early_termination"))]
         {
+            let mut ms = vec![];
+            let mut ps = vec![];
+            cycles_file
+                .iter()
+                .skip(1)
+                .filter(|l| !l.starts_with('c'))
+                .for_each(|l| match l.starts_with('m') {
+                    true => ms.push(
+                        l.split(' ')
+                            .skip(1)
+                            .filter_map(|i| {
+                                i32::from_str(i)
+                                    .map(|l| {
+                                        if l < 0 {
+                                            mappings.get(&l.abs()).map(|j| -j)
+                                        } else {
+                                            mappings.get(&l).copied()
+                                        }
+                                    })
+                                    .ok()
+                            })
+                            .flatten()
+                            .collect::<Vec<_>>(),
+                    ),
+                    _ => ps.push(
+                        l.split(' ')
+                            .skip(1)
+                            .filter_map(|i| {
+                                i32::from_str(i)
+                                    .map(|l| {
+                                        if l < 0 {
+                                            mappings.get(&l.abs()).map(|j| -j)
+                                        } else {
+                                            mappings.get(&l).copied()
+                                        }
+                                    })
+                                    .ok()
+                            })
+                            .flatten()
+                            .collect::<Vec<_>>(),
+                    ),
+                });
+
             // parallel order-ignoring
             count -= ms
                 .par_iter()
@@ -408,6 +409,88 @@ pub fn count_on_cg_with_cycles(
                     count_on_ccg(&ccg_nodes, &delta)
                 })
                 .sum::<Integer>();
+        }
+        #[cfg(feature = "sequential_early_termination")]
+        {
+            let mut s = 0;
+            #[allow(unused_variables)]
+            let mut m = 0;
+            let mut routes = vec![];
+            for l in cycles_file.iter().skip(1).filter(|l| !l.starts_with('c')) {
+                match l.starts_with('m') {
+                    true => {
+                        routes.push((
+                            0,
+                            l.split(' ')
+                                .skip(1)
+                                .filter_map(|i| {
+                                    i32::from_str(i)
+                                        .map(|l| {
+                                            if l < 0 {
+                                                mappings.get(&l.abs()).map(|j| -j)
+                                            } else {
+                                                mappings.get(&l).copied()
+                                            }
+                                        })
+                                        .ok()
+                                })
+                                .flatten()
+                                .collect::<Vec<_>>(),
+                        ));
+                        let s_ = 0;
+                        if s != s_ {
+                            m += 1
+                        }
+                        s = s_;
+                    }
+                    _ => {
+                        routes.push((
+                            1,
+                            l.split(' ')
+                                .skip(1)
+                                .filter_map(|i| {
+                                    i32::from_str(i)
+                                        .map(|l| {
+                                            if l < 0 {
+                                                mappings.get(&l.abs()).map(|j| -j)
+                                            } else {
+                                                mappings.get(&l).copied()
+                                            }
+                                        })
+                                        .ok()
+                                })
+                                .flatten()
+                                .collect::<Vec<_>>(),
+                        ));
+                        let s_ = 1;
+                        if s != s_ {
+                            m += 1
+                        }
+                        s = s_;
+                    }
+                }
+            }
+
+            let mut count_ = Integer::from(0);
+            let mut s_ = &0;
+            for (s, r) in routes.iter() {
+                let mut delta = assumptions.to_vec().clone();
+                delta.extend(r);
+                let a = count_on_ccg(&ccg_nodes, &delta);
+
+                if s_ != s && count_ == count {
+                    break;
+                } else {
+                    count_ = count.clone();
+                    s_ = s;
+                }
+
+                if *s == 0 {
+                    count -= a;
+                } else {
+                    count += a;
+                }
+            }
         }
     }
 
