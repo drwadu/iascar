@@ -12,18 +12,13 @@ iascar expects
 - either an
 sd-DNNF in the format as defined in the archive of c2d available from
 [http://reasoning.cs.ucla.edu/c2d/](); or 
-- a counting graph in [CCG Format]().
+- a counting graph in [CCG Format](#CCG-Format).
 
 ## Build 
 ```console
 iascar$ cargo build --release
 ```
 The resulting binary is `target/release/iascar`
-
-## Install 
-```console
-$ cargo install iascar
-```
 
 ## Usage
 The following describes each use case of iascar demonstrated for answer set
@@ -40,15 +35,15 @@ cnf instance of the program; at least when these
 [tools](https://research.ics.aalto.fi/software/asp/download/) are used.
 Compressing sd-DNNFs will preserve the original literal mappings and place them
 on the beginning of the compressed counting graph (for more see [CCG 
-Format]()).
+Format](#CCG-Format)).
 ### Example 1 (**Incremental Answer Set Counting on Compressed Counting Graph with Bounded Alternation Depth**)
 To count incrementally with bounded alternation depth use the `-as` flag and append the
 alternation depth. Providing no alternation depth, or providing alternation
 depth 0 results in the unbounded alternation depth. 
 
 Note that it is **required** that you put the unsupported nogood constraints of
-your instance `name.lp` in a file named `name.cycles` that satisfies the [UNC
-Format]() and lies on the same level as `name.ccg`. 
+your instance `name.lp` in a file named `name.cycles` that satisfies the [UC
+Format](#UC-Format) and lies on the same level as `name.ccg`. 
 ```console
 iascar$ target/release/iascar examples/example_lp.ccg -as 1 -a 7 -12
 ```
@@ -86,3 +81,27 @@ A file in CCG format encodes a (compressed) counting graph such that
 - lines $i$ $b$ consisting of an integer $i$ and $b \in \{0,1\}$ correspond to a literal node labeled with literal $i$ and value $b$;
 - lines $*$ $j$ $k$<sub>1</sub> $\dots k$<sub>$j$</sub> corresponding to a product (and-node) consisting of the number of children $j$ and the respective line indices of the children $k$<sub>$1$</sub> $\dots k$<sub>$j$</sub>;
 - and lines $+$ $j$ $k$<sub>$1$</sub> $\dots k$<sub>$j$</sub> corresponding to a sum (or-node) consisting of the number of children $j$ and the respective line indices of the children $k$<sub>$1$</sub> $\dots k$<sub>$j$</sub>.
+
+## UC Format
+![](examples/uc.png)
+
+From the above positive dependency graph we can extract two unsupported constraints
+```prolog 
+:- a, b, not c, not g.
+:- e, f, not g.
+```
+A file in UC Format contains combinations of unsupported constraints encoded by 
+literal mappings and with leading characters `p` (add) and `m` (subtract). The first
+line gives the number of cycles taken into consideration. Furthermore, again a line that starts with caracter c is a comment.
+```
+2
+c a 1
+c b 2
+c c 3
+c e 4
+c f 5
+c g 6
+m -3 -6 1 2
+m -6 4 5
+p -3 -6 1 2 -6 4 5
+```
