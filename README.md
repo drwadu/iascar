@@ -105,3 +105,4 @@ m -3 -6 1 2
 m -6 4 5
 p -3 -6 1 2 -6 4 5
 ```
+**Note** that iascar expects literal mappings in .cycles files to be of this form `c variable integer`.
