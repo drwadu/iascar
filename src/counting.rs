@@ -203,16 +203,22 @@ pub fn count_on_cg_with_cycles(
     {
         if !m.is_empty() {
             let mut line = m.split_whitespace().skip(1);
-            let s = line.next().unwrap();
-            let i = line.next().and_then(|i| i32::from_str(i).ok()).unwrap(); // TODO
+            let i = line
+                .next()
+                .and_then(|i| i32::from_str(i).ok())
+                .expect("invalid counting graph.");
+            let s = line.next().expect("invalid counting graph.");
             ccg_mappings.insert(s.to_string(), i);
         }
     }
     let mut mappings: HashMap<i32, i32> = HashMap::new();
     for m in cycles_mappings {
         let mut line = m.split_whitespace().skip(1);
-        let s = line.next().unwrap();
-        let i = line.next().and_then(|i| i32::from_str(i).ok()).unwrap(); // TODO
+        let s = line.next().expect("invalid cycles file.");
+        let i = line
+            .next()
+            .and_then(|i| i32::from_str(i).ok())
+            .expect("invalid cycles file.");
         let j = ccg_mappings.get(s).unwrap();
         mappings.insert(i, *j);
     }
