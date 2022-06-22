@@ -29,6 +29,7 @@ program [`example_lp.lp`](examples/example_lp.lp) and a
 To provide assumptions use the `-a` flag followed by whitespace seperated
 integers, corresponding to literals. Omitting integers or the `-a` flag in
 general evaluates to no assumptions. Invalid assumptions will be ignored.
+In combination with other `-as` flag, always provide `-a` first.
 
 Literal mappings of an answer set program can usually be found in the original
 cnf instance of the program; at least when these
@@ -45,7 +46,7 @@ Note that it is **required** that you put the unsupported nogood constraints of
 your instance `name.lp` in a file named `name.cycles` that satisfies the [UC
 Format](#UC-Format) and lies on the same level as `name.ccg`. 
 ```console
-iascar$ target/release/iascar examples/example_lp.ccg -as 1 -a 7 -12
+iascar$ target/release/iascar examples/example_lp.ccg -a 7 -12 -as 1
 ```
 
 ### Example 2 (**Compressing Counting Graph: sd-DNNF to CCG**)
