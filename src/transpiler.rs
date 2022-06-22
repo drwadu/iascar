@@ -278,7 +278,7 @@ fn write(
     handle.write_all(format!("{}\n", stats).as_bytes())?;
 
     for (atom, int) in cnf_mappings {
-        handle.write_all(format!("c {} {:?}\n", atom, int).as_bytes())?;
+        handle.write_all(format!("c {:?} {}\n", int, atom).as_bytes())?;
     }
 
     for (_, node) in transpilation {
