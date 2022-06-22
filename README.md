@@ -69,7 +69,7 @@ iascar$ target/release/iascar examples/p_xor_q.cnf.nnf -cnnf -a 1 -2
 ```
 
 ## CCG Format
-![](examples/ima_73a5d69.png)
+![](examples/ima_1b5137d.png)
 
 A file in CCG format encodes a (compressed) counting graph such that 
 - the first line $\text{ccg } v$ $e$ $n$ $c$ denotes
