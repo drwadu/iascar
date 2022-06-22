@@ -29,7 +29,7 @@ program [`example_lp.lp`](examples/example_lp.lp) and a
 To provide assumptions use the `-a` flag followed by whitespace seperated
 integers, corresponding to literals. Omitting integers or the `-a` flag in
 general evaluates to no assumptions. Invalid assumptions will be ignored.
-In combination with other `-as` flag, always provide `-a` first.
+In combination with the`-as` flag, always provide `-a` first.
 
 Literal mappings of an answer set program can usually be found in the original
 cnf instance of the program; at least when these
