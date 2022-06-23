@@ -1,6 +1,6 @@
 # ias :car: 
 The **Incremental Answer Set Counter with Anytime Refinement**  and **Counting
-Graph Compressor** as proposed in [[1]]( https://tinyurl.com/iascar-s).
+Graph Compressor** as proposed in [[1]]().
 
 **iascar** is a propositional model counter for formulae in so called _smooth deterministic decomposable negation normal form_ (sd-DNNF) [[2]](https://www.tandfonline.com/doi/pdf/10.3166/jancl.11.11-34?casa_token=vUB3KKgEZTEAAAAA:Y_6z-KXBR002dLW60_DjkqjZxo68XCTgLuuBmd3eBPlj98whbWj2pbVAHQTmPTnICCdkimC7gq9J).
 In particular, iascar is tailored toward frequent answer set counting under
