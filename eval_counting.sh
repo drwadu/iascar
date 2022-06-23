@@ -1,0 +1,1 @@
+perf stat -r 10 ./cua $1 -as -a $2 $3 $4

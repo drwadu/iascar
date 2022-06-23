@@ -1,0 +1,64 @@
+[ruso@ruso-xps137390 eval]$ ./cua 8_queens/8_queens.ccg -a 59 54 84
+0
+[ruso@ruso-xps137390 eval]$ clingo simple/si.lp 0
+clingo version 5.5.0
+Reading from simple/si.lp
+Solving...
+Answer: 1
+k b e c
+Answer: 2
+j g i h a f d c
+Answer: 3
+k g a f d c
+Answer: 4
+j g i h b f d
+Answer: 5
+k g b f d
+Answer: 6
+j g i h a e d c
+Answer: 7
+k g a e d c
+Answer: 8
+j g i h b e d c
+SATISFIABLE
+
+Models       : 8
+Calls        : 1
+Time         : 0.002s (Solving: 0.00s 1st Model: 0.00s Unsat: 0.00s)
+CPU Time     : 0.002s
+[ruso@ruso-xps137390 eval]$ ./cua nrp_accenture/accenture-transportation-services_20111022_1524_subgraph_train+metro+tram+bus_gr_bz2_lp_lp_paths_tw3.ccg -a 55 21 40
+0
+[ruso@ruso-xps137390 eval]$ ./cua nrp_california/california-shuttle-bus_20120823_2349_normalized_subgraph_bus_gr_bz2_lp_lp_paths_tw3.ccg -a -31 -87 -65
+0
+[ruso@ruso-xps137390 eval]$ ./cua nrp_berkshire/r_berkshire-regional-transportation-authority_20120707_0319_gr_bz2_lp_lp_paths_tw3.ccg -a 412 579 387
+0
+[ruso@ruso-xps137390 eval]$ ./cua nrp_benton/r_benton-county-transportation_20151216_1804_subgraph_tram+bus_gr_bz2_lp_lp_paths_tw3.ccg -a -90 -122 96
+0
+[ruso@ruso-xps137390 eval]$ ./cua nrp_aircoach//r_aircoach_20130716_1324_subgraph_bus_gr_bz2_lp_lp_paths_tw3.ccg -a -84 435 204
+0
+[ruso@ruso-xps137390 eval]$ ./cua nrp_kyoto/kyoto-city-bus_20100905_0027_gr_bz2_lp_lp_paths_tw3.ccg -a 15 25 -37
+0
+[ruso@ruso-xps137390 eval]$ clingo 0 nrp_autorit/autorit-de-passage-de-dmonstration_20090206_0552_subgraph_bus_gr_bz2_lp_lp_paths_tw3.lp 
+clingo version 5.5.0
+Reading from ...subgraph_bus_gr_bz2_lp_lp_paths_tw3.lp
+nrp_autorit/autorit-de-passage-de-dmonstration_20090206_0552_subgraph_bus_gr_bz2_lp_lp_paths_tw3.lp:2:52-61: info: atom does not occur in any rule head:
+  link(Y,#Anon2)
+
+nrp_autorit/autorit-de-passage-de-dmonstration_20090206_0552_subgraph_bus_gr_bz2_lp_lp_paths_tw3.lp:2:66-75: info: atom does not occur in any rule head:
+  link(#Anon3,Y)
+
+nrp_autorit/autorit-de-passage-de-dmonstration_20090206_0552_subgraph_bus_gr_bz2_lp_lp_paths_tw3.lp:5:51-60: info: atom does not occur in any rule head:
+  link(Y,#Anon2)
+
+nrp_autorit/autorit-de-passage-de-dmonstration_20090206_0552_subgraph_bus_gr_bz2_lp_lp_paths_tw3.lp:5:65-74: info: atom does not occur in any rule head:
+  link(#Anon3,Y)
+
+Solving...
+Answer: 1
+edge(1,9) edge(1,3) edge(1,4) edge(2,4) edge(2,6) edge(3,7) edge(5,8) edge(5,6) reach(1) goal(9) select(1,9) nots(1,3) nots(1,4) reach(9) nots(9,1)
+SATISFIABLE
+
+Models       : 1
+Calls        : 1
+Time         : 0.001s (Solving: 0.00s 1st Model: 0.00s Unsat: 0.00s)
+CPU Time     : 0.001s

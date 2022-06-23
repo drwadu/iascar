@@ -1,0 +1,1 @@
+perf stat -r 10 ./cua $1 -t > /dev/null

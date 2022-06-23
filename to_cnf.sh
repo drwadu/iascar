@@ -1,0 +1,1 @@
+gringo $1 --output=smodels | ./lp2normal-2.27 | ./lp2sat-1.24 
