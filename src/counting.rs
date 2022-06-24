@@ -332,7 +332,7 @@ pub fn count_on_cg_with_cycles(
         #[cfg(feature = "sequential_early_termination")]
         {
             let mut count_ = Integer::from(0);
-            let mut s_ = &0;
+            let mut s_ = &0; //
             for (s, r) in routes.iter() {
                 let mut delta = assumptions.to_vec().clone();
                 delta.extend(r);
