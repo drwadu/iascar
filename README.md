@@ -6,7 +6,7 @@ Graph Compressor** as proposed in [[1]]().
 In particular, iascar is tailored toward frequent answer set counting under
 assumptions. However, it can also be used to count supported models (under
 assumptions) of an answer set program. Even more so, iascar can also simply be
-used to count the number of a models of classic formula. 
+used to count the number of models of classic formula. 
 
 iascar expects 
 - either an
