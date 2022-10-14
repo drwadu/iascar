@@ -19,3 +19,4 @@ rayon = "1.5"
 [features]
 no_undercounting = []
 sequential_early_termination = []
+verbose = []

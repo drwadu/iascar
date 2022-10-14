@@ -240,7 +240,7 @@ pub fn transpile(nnf_path: String) -> Result<()> {
         node_count_t,
         n_edges,
         new_vars_count,
-        count.to_f32().log10()
+        count.to_f64().log10()
     );
 
     write(&stats, &transpilation, &cnf_mappings)

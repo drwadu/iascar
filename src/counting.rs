@@ -586,17 +586,27 @@ fn count_on_ccg(ccg: &[String], assumptions: &[i32]) -> Integer {
 pub fn count_on_cg(filename: impl AsRef<Path>, assumptions: &[i32]) -> Integer {
     let nnf = read_to_string(&filename).unwrap_or_else(|_| "".to_string());
 
+    #[cfg(feature = "verbose")]
+    {
+        println!("c o {}", unsafe { nnf.lines().next().unwrap_unchecked() });
+        print!("c o");
+        assumptions.iter().for_each(|a| print!(" {:?}", a));
+        println!()
+    }
+
     let mut lines = nnf.lines().filter(|l| !l.starts_with("c "));
 
+    /*
     if assumptions.is_empty() {
         return lines
             .next()
             .and_then(|stats| stats.split_whitespace().last())
-            .and_then(|c| f32::from_str(c).ok())
-            .map(|l| 10f32.powf(l).round() as u128)
+            .and_then(|c| f64::from_str(c).ok())
+            .map(|l| 10f64.powf(l).round() as u128)
             .map(Integer::from)
             .expect("cannot parse count.");
     }
+    */
 
     let node_count = lines
         .next()
