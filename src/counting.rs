@@ -230,8 +230,17 @@ pub fn count_on_cg_with_cycles(
         .filter(|l| !l.starts_with('c'))
         .map(|s| s.to_string())
         .collect::<Vec<_>>();
+
+    #[cfg(feature = "verbose")]
+    {
+        // println!("c o {}", unsafe { nnf.lines().next().unwrap_unchecked() });
+        print!("c o");
+        assumptions.iter().for_each(|a| print!(" {:?}", a));
+        println!()
+    }
     let mut count = count_on_ccg(&ccg_nodes, assumptions);
 
+    // TODO: depth
     if depth > 0 {
         #[cfg(feature = "no_undercounting")]
         #[allow(unused_assignments)]
@@ -245,7 +254,7 @@ pub fn count_on_cg_with_cycles(
             }
         }
 
-        // if in first alternation, then overlaps of two exlusion routes (inclusion routes of size two)
+        // if in first alternation, then overlaps of two exclusion routes (inclusion routes of size two)
         // take routes until alternation depth
         let mut s = 0;
         let mut m = 0;
@@ -331,6 +340,11 @@ pub fn count_on_cg_with_cycles(
 
         #[cfg(feature = "sequential_early_termination")]
         {
+            let mut i = 0;
+            #[cfg(feature = "verbose")]
+            {
+                print!("c o ");
+            }
             let mut count_ = Integer::from(0);
             let mut s_ = &0; //
             for (s, r) in routes.iter() {
@@ -347,10 +361,22 @@ pub fn count_on_cg_with_cycles(
 
                 if *s == 0 {
                     count -= a;
+                    #[cfg(feature = "verbose")]
+                    {
+                        print!("-");
+                        i += 1;
+                    }
                 } else {
                     count += a;
+                    #[cfg(feature = "verbose")]
+                    {
+                        print!("+");
+                        i += 1;
+                    }
                 }
             }
+            #[cfg(feature = "verbose")]
+            println!("{:?}", i);
         }
     } else {
         #[cfg(not(feature = "sequential_early_termination"))]
@@ -418,6 +444,8 @@ pub fn count_on_cg_with_cycles(
         }
         #[cfg(feature = "sequential_early_termination")]
         {
+            #[cfg(feature = "verbose")]
+            print!("c o ");
             let mut s = 0;
             #[allow(unused_variables)]
             let mut m = 0;
@@ -448,6 +476,8 @@ pub fn count_on_cg_with_cycles(
                             m += 1
                         }
                         s = s_;
+                        #[cfg(feature = "verbose")]
+                        print!("-");
                     }
                     _ => {
                         routes.push((
@@ -473,9 +503,13 @@ pub fn count_on_cg_with_cycles(
                             m += 1
                         }
                         s = s_;
+                        #[cfg(feature = "verbose")]
+                        print!("+");
                     }
                 }
             }
+            #[cfg(feature = "verbose")]
+            println!();
 
             let mut count_ = Integer::from(0);
             let mut s_ = &0;

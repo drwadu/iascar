@@ -71,53 +71,6 @@ fn main() {
         }
         _ => vec![],
     };
-    /*
-    let assumptions = match matches!(flags.next().map(String::as_str), Some("-a"))
-        || matches!(flag.map(String::as_str), Some("-a"))
-    {
-        true => {
-            let first = rest.next();
-
-            match first.map(|input| i32::from_str(input)) {
-                Some(Ok(lit)) => {
-                    let mut delta = vec![Ok(lit)];
-
-                    for lit in rest {
-                        delta.push(i32::from_str(lit));
-                    }
-
-                    //#[cfg(feature = "verbose")]
-                    //{
-                    //    let v = delta.into_iter().flatten().collect::<Vec<i32>>();
-                    //    print!("c o");
-                    //    v.iter().for_each(|a| print!(" {:?}", a));
-                    //    println!();
-                    //    v
-                    //}
-                    //#[cfg(not(feature = "verbose"))]
-                    delta.into_iter().flatten().collect::<Vec<i32>>()
-                }
-                //_ => first
-                //    .and_then(|path| {
-                //        read_to_string(path)
-                //            .map(|delta| {
-                //                delta
-                //                    .lines()
-                //                    .next()
-                //                    .unwrap_or("")
-                //                    .split_whitespace()
-                //                    .flat_map(|lit| i32::from_str(lit).ok())
-                //                    .collect::<Vec<_>>()
-                //            })
-                //            .ok()
-                //    })
-                //    .unwrap_or_default(),
-                _ => vec![],
-            }
-        }
-        _ => vec![],
-    };
-    */
 
     match flag.map(String::as_str) {
         Some("-cnnf") => {
@@ -129,7 +82,7 @@ fn main() {
                 if count > rug::Integer::from(0) {
                     println!("s SATISFIABLE");
                     println!("c s type cnnf");
-                    println!("c s log10-estimate arb int {:?}", count.to_f32().log10());
+                    println!("c s log10-estimate {:?}", count.to_f64().log10());
                     println!("c s exact arb int {:?}", count);
                 } else {
                     println!("s UNSATISFIABLE")
@@ -137,10 +90,23 @@ fn main() {
             }
         }
         Some("-cnnfasp") => {
+            #[cfg(not(feature = "verbose"))]
             println!(
                 "{:?}",
                 counting::count_on_sddnnf_asp(nnf_file, &assumptions)
             );
+            #[cfg(feature = "verbose")]
+            {
+                let count = counting::count_on_sddnnf_asp(nnf_file, &assumptions);
+                if count > rug::Integer::from(0) {
+                    println!("s SATISFIABLE");
+                    println!("c s type cnnfasp");
+                    println!("c s log10-estimate {:?}", count.to_f64().log10());
+                    println!("c s exact arb int {:?}", count);
+                } else {
+                    println!("s UNSATISFIABLE")
+                }
+            }
         }
         Some("-as") => {
             let mut dpcs_file = nnf_file.clone();
@@ -160,13 +126,37 @@ fn main() {
                 .next()
                 .map_or(Some(0), |n| usize::from_str(n).ok())
                 .expect("error occurred during reading alternation depth.");
-            if !no_bounding {
-                println!(
-                    "{:?}",
-                    counting::count_on_cg_with_cycles(nnf_file, lines, &assumptions, depth)
-                );
-            } else {
-                println!("{:?}", counting::count_on_cg(nnf_file, &assumptions));
+
+            // TODO: read -a
+            #[cfg(feature = "verbose")]
+            {
+                let count = match no_bounding {
+                    false => {
+                        println!("c o depth={:?}", depth);
+                        counting::count_on_cg_with_cycles(nnf_file, lines, &assumptions, depth)
+                    }
+                    _ => counting::count_on_cg(nnf_file, &assumptions),
+                };
+                if count > rug::Integer::from(0) {
+                    println!("s SATISFIABLE");
+                    println!("c s type as");
+                    println!("c s log10-estimate {:?}", count.to_f64().log10());
+                    println!("c s exact arb int {:?}", count);
+                } else {
+                    println!("s UNSATISFIABLE")
+                }
+            }
+
+            #[cfg(not(feature = "verbose"))]
+            {
+                if !no_bounding {
+                    println!(
+                        "{:?}",
+                        counting::count_on_cg_with_cycles(nnf_file, lines, &assumptions, depth)
+                    );
+                } else {
+                    println!("{:?}", counting::count_on_cg(nnf_file, &assumptions));
+                }
             }
         }
         Some("-t") => {
