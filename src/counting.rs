@@ -723,3 +723,141 @@ pub fn count_on_cg(filename: impl AsRef<Path>, assumptions: &[i32]) -> Integer {
 
     count
 }
+
+//
+
+//use itertools::partition;
+//pub fn anytime_refinement_count_on_ccg(
+//    cg_path: impl AsRef<Path>,
+//    cycles_lines: std::str::Lines,
+//    assumptions: &[i32],
+//    depth: usize,
+//) -> Integer {
+//    // let cg = read_to_string(&cg_path).expect("reading counting graph failed.");
+//    //let (ccg, ccg_mappings): (Vec<_>, Vec<&str>) = read_to_string(&cg_path)
+//    //    .expect("reading counting graph failed.")
+//    //    .lines()
+//    //    .partition(|l| l.starts_with("c "));
+//    //let mut cg_literal_mappings: HashMap<String, i32> = HashMap::new();
+//    //for mapping in ccg_mappings {
+//    //    if !mapping.is_empty() {
+//    //        let mut line = mapping.split_whitespace().skip(1);
+//    //        let i = line
+//    //            .next()
+//    //            .and_then(|i| i32::from_str(i).ok())
+//    //            .expect("invalid counting graph.");
+//    //        let s = line.next().expect("invalid counting graph.");
+//    //        cg_literal_mappings.insert(s.to_string(), i);
+//    //    }
+//    //}
+//
+//    //// let cycles_file = cycles.collect::<Vec<_>>();
+//    //let (cycles, mappings): (Vec<_>, Vec<&str>) = cycles_lines.partition(|l| l.starts_with("c "));
+//    //let mut cycles_literal_mappings: HashMap<i32, i32> = HashMap::new();
+//    //for m in mappings {
+//    //    let mut line = m.split_whitespace().skip(1);
+//    //    let i = line
+//    //        .next()
+//    //        .and_then(|i| i32::from_str(i).ok())
+//    //        .expect("invalid cycles file.");
+//    //    let s = line.next().expect("invalid cycles file.");
+//    //    let j = cg_literal_mappings.get(s).unwrap();
+//    //    cycles_literal_mappings.insert(i, *j);
+//    //}
+//
+//    unimplemented!()
+//}
+
+/////////////////////////////////////////////////
+
+use itertools::Itertools;
+
+pub fn anytime_cg_count(
+    ccg: impl AsRef<Path>,
+    cycles: std::str::Lines,
+    assumptions: &[i32],
+    depth: usize,
+) -> Integer {
+    let cycles_file = cycles.collect::<Vec<_>>();
+
+    let ccg_nodes = read_to_string(ccg)
+        .unwrap()
+        .lines()
+        .into_iter()
+        .filter(|l| !l.starts_with('c'))
+        .map(|s| s.to_string())
+        .collect::<Vec<_>>();
+
+    let mut count = count_on_ccg(&ccg_nodes, assumptions);
+
+    let ucs = cycles_file
+        .iter()
+        .filter(|l| !l.starts_with('c'))
+        .map(|l| {
+            l.split_whitespace()
+                .map(|i| i32::from_str(i).ok())
+                .flatten()
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+    let n_cycles = ucs.len();
+
+    let mut i = 1;
+    let d = if depth == 0 { n_cycles + 1 } else { depth + 1 };
+    let mut prev = count.clone();
+    #[cfg(feature = "verbose")]
+    println!("c o d={:?} n={:?} a={:?}", d - 1, n_cycles, assumptions);
+
+    while i < d {
+        let lambda_i = (0..n_cycles).combinations(i);
+        match i % 2 != 0 {
+            true =>
+            // -
+            {
+                for gamma in lambda_i {
+                    let assumptions = gamma
+                        .iter()
+                        .map(|idx| unsafe { ucs.get_unchecked(*idx) })
+                        .fold(vec![], |mut a, v| {
+                            a.extend(v);
+                            a
+                        });
+                    count -= count_on_ccg(&ccg_nodes, &assumptions);
+                }
+            }
+            _ =>
+            // +
+            {
+                for gamma in lambda_i {
+                    let assumptions = gamma
+                        .iter()
+                        .map(|idx| unsafe { ucs.get_unchecked(*idx) })
+                        .fold(vec![], |mut a, v| {
+                            a.extend(v);
+                            a
+                        });
+                    count += count_on_ccg(&ccg_nodes, &assumptions);
+                }
+            }
+        }
+
+        if prev == count {
+            break;
+        } else {
+            prev = count.clone()
+        }
+
+        i += 1;
+    }
+
+    #[cfg(feature = "verbose")]
+    {
+        if i % 2 == 0 {
+            println!("c o {:.2}+", i as f32 / d as f32)
+        } else {
+            println!("c o {:.2}-", i as f32 / d as f32)
+        }
+    }
+
+    count
+}

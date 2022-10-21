@@ -12,7 +12,7 @@ license = "LGPL-2.1"
 [dependencies]
 clingo = { git = "https://github.com/drwadu/clingo-rs", branch = "backport-0.6/issue43" }
 rug = "1.16.0"
-itertools = "0.4.9"
+itertools = "0.10.5"
 thiserror = "1.0.30"
 rayon = "1.5"
 

@@ -167,6 +167,23 @@ fn main() {
                 std::process::exit(-1)
             }
         }
+        Some("-e") => {
+            let mut dpcs_file = nnf_file.clone();
+            dpcs_file = format!(
+                "{}.ucs",
+                dpcs_file.split('.').next().expect("no cycles file found.")
+            );
+            let dpcs = read_to_string(dpcs_file).expect("error occurred during reading cycles.");
+            let lines = dpcs.lines();
+            let depth = rest_
+                .next()
+                .map_or(Some(0), |n| usize::from_str(n).ok())
+                .expect("error occurred during reading alternation depth.");
+            println!(
+                "{:?}",
+                counting::anytime_cg_count(nnf_file, lines, &assumptions, depth)
+            )
+        }
         _ => {
             #[cfg(not(feature = "verbose"))]
             println!("{:?}", counting::count_on_cg(nnf_file, &assumptions));
