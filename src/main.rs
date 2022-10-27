@@ -62,13 +62,12 @@ fn main() {
                 _ => vec![],
             }
         }
-        Some("-fa") => {
-            unsafe { read_to_string(flags.next().unwrap_or(&"".to_owned())).unwrap_unchecked() }
-                .lines()
-                .map(|l| i32::from_str(l).ok())
-                .flatten()
-                .collect::<Vec<_>>()
-        }
+        Some("-fa") => read_to_string(flags.next().unwrap_or(&"".to_owned())) // unwrap_unchecked
+            .unwrap()
+            .lines()
+            .map(|l| i32::from_str(l).ok())
+            .flatten()
+            .collect::<Vec<_>>(),
         _ => vec![],
     };
 
