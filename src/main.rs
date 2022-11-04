@@ -72,6 +72,22 @@ fn main() {
     };
 
     match flag.map(String::as_str) {
+        Some("-cccg") => {
+            #[cfg(not(feature = "verbose"))]
+            println!("{:?}", counting::count_on_ccg_io(nnf_file, &assumptions));
+            #[cfg(feature = "verbose")]
+            {
+                let count = counting::count_on_ccg_io(nnf_file, &assumptions);
+                if count > rug::Integer::from(0) {
+                    println!("s SATISFIABLE");
+                    println!("c s type cnnf");
+                    println!("c s log10-estimate {:?}", count.to_f64().log10());
+                    println!("c s exact arb int {:?}", count);
+                } else {
+                    println!("s UNSATISFIABLE")
+                }
+            }
+        }
         Some("-cnnf") => {
             #[cfg(not(feature = "verbose"))]
             println!("{:?}", counting::count_on_sddnnf(nnf_file, &assumptions));

@@ -184,6 +184,92 @@ pub fn count_on_sddnnf_asp(filename: impl AsRef<Path>, assumptions: &[i32]) -> I
     count
 }
 
+pub fn count_on_ccg_io(ccg: impl AsRef<Path>, assumptions: &[i32]) -> Integer {
+    let ccg_nodes = read_to_string(ccg)
+        .unwrap()
+        .lines()
+        .into_iter()
+        .filter(|l| !l.starts_with('c'))
+        .map(|s| s.to_string())
+        .collect::<Vec<_>>();
+    let node_count = ccg_nodes.len();
+
+    let mut nodes = Vec::with_capacity(node_count);
+
+    let mut count = Integer::from(0);
+
+    for node in ccg_nodes {
+        let mut spec = node.split_whitespace();
+        match spec.next() {
+            Some("*") => {
+                let n_children = spec
+                    .next()
+                    .and_then(|child| usize::from_str(child).ok())
+                    .unwrap();
+
+                let children_ = &spec
+                    .flat_map(|child| usize::from_str(child).ok())
+                    .collect::<Vec<_>>()[..n_children];
+                let children = children_
+                    .iter()
+                    .map(|idx| unsafe { nodes.get_unchecked(*idx) })
+                    .collect::<Vec<_>>();
+
+                count = children
+                    .iter()
+                    .fold(Integer::from(1), |acc, child_val: &&Integer| {
+                        acc * &(*child_val).clone()
+                    });
+
+                nodes.push(count.clone());
+            }
+            Some("+") => {
+                count = Integer::from(0);
+                let n_children = spec
+                    .next()
+                    .and_then(|child| usize::from_str(child).ok())
+                    .unwrap();
+
+                let children_ = &spec
+                    .flat_map(|child| usize::from_str(child).ok())
+                    .collect::<Vec<_>>()[..n_children];
+                let children = children_
+                    .iter()
+                    .map(|idx| unsafe { nodes.get_unchecked(*idx) })
+                    .collect::<Vec<_>>();
+
+                children.iter().for_each(|child_val| {
+                    count += &(*child_val).clone();
+                });
+
+                nodes.push(count.clone());
+            }
+            o => {
+                let lit = o
+                    .and_then(|l| i32::from_str(l).ok())
+                    .expect("reading literal failed.");
+
+                count = spec
+                    .next()
+                    .and_then(|l| i32::from_str(l).map(Integer::from).ok())
+                    .expect("reading val failed.");
+
+                match assumptions.contains(&-lit) {
+                    false => {
+                        nodes.push(count.clone());
+                    }
+                    _ => {
+                        count = Integer::from(0);
+                        nodes.push(count.clone());
+                    }
+                }
+            }
+        }
+    }
+
+    count
+}
+
 fn count_on_ccg(ccg: &[String], assumptions: &[i32]) -> Integer {
     let ccg_nodes = ccg.iter().collect::<Vec<_>>();
     let node_count = ccg_nodes.len();
