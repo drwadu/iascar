@@ -393,28 +393,30 @@ pub fn anytime_cg_count(
             // -
             {
                 for gamma in lambda_i {
-                    let assumptions = gamma
+                    let mut assumptions_ = gamma
                         .iter()
                         .map(|idx| unsafe { ucs.get_unchecked(*idx) })
                         .fold(vec![], |mut a, v| {
                             a.extend(v);
                             a
                         });
-                    count -= count_on_ccg(&ccg_nodes, &assumptions);
+                    assumptions_.extend(assumptions);
+                    count -= count_on_ccg(&ccg_nodes, &assumptions_);
                 }
             }
             _ =>
             // +
             {
                 for gamma in lambda_i {
-                    let assumptions = gamma
+                    let mut assumptions_ = gamma
                         .iter()
                         .map(|idx| unsafe { ucs.get_unchecked(*idx) })
                         .fold(vec![], |mut a, v| {
                             a.extend(v);
                             a
                         });
-                    count += count_on_ccg(&ccg_nodes, &assumptions);
+                    assumptions_.extend(assumptions);
+                    count += count_on_ccg(&ccg_nodes, &assumptions_);
                 }
             }
         }
@@ -428,13 +430,19 @@ pub fn anytime_cg_count(
         i += 1;
     }
 
-    #[cfg(feature = "verbose")]
-    {
-        if i % 2 == 0 {
-            println!("c o {:.2}+", i as f32 / d as f32)
-        } else {
-            println!("c o {:.2}-", i as f32 / d as f32)
-        }
+    //#[cfg(feature = "verbose")]
+    //{
+    //    if i % 2 == 0 {
+    //        println!("c o {:.2}+", i as f32 / d as f32)
+    //    } else {
+    //        println!("c o {:.2}-", i as f32 / d as f32)
+    //    }
+    //}
+
+    if i % 2 == 0 {
+        println!("c o {:.2}+", i as f32 / d as f32)
+    } else {
+        println!("c o {:.2}-", i as f32 / d as f32)
     }
 
     count
