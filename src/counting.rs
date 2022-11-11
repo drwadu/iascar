@@ -439,11 +439,11 @@ pub fn anytime_cg_count(
     //    }
     //}
 
-    if i % 2 == 0 {
-        println!("c o {:.2}+", i as f32 / d as f32)
-    } else {
-        println!("c o {:.2}-", i as f32 / d as f32)
-    }
+    //if (i - 1) % 2 == 0 {
+    //    println!("c o {:.2}+", i as f32 / d as f32)
+    //} else {
+    //    println!("c o {:.2}-", i as f32 / d as f32)
+    //}
 
     count
 }

@@ -102,7 +102,7 @@ fn main() {
         let dpcs = read_to_string(dpcs_file).expect("error occurred during reading cycles.");
         let lines = dpcs.lines();
         let depth = match inputs.iter().find(|s| s.starts_with("--d=")) {
-            Some(s) => s.split('=').next().map(usize::from_str).unwrap().unwrap(),
+            Some(s) => s.split('=').nth(1).map(usize::from_str).unwrap().unwrap(),
             _ => 0,
         };
 
