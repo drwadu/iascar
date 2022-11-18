@@ -383,7 +383,7 @@ pub fn anytime_cg_count(
     let mut i = 1;
     let d = if depth == 0 { n_cycles + 1 } else { depth + 1 };
     let mut prev = count.clone();
-    #[cfg(feature = "verbose")]
+
     println!("c o d={:?} n={:?} a={:?}", d - 1, n_cycles, assumptions);
 
     while i < d {
@@ -430,20 +430,12 @@ pub fn anytime_cg_count(
         i += 1;
     }
 
-    //#[cfg(feature = "verbose")]
-    //{
-    //    if i % 2 == 0 {
-    //        println!("c o {:.2}+", i as f32 / d as f32)
-    //    } else {
-    //        println!("c o {:.2}-", i as f32 / d as f32)
-    //    }
-    //}
-
-    //if (i - 1) % 2 == 0 {
-    //    println!("c o {:.2}+", i as f32 / d as f32)
-    //} else {
-    //    println!("c o {:.2}-", i as f32 / d as f32)
-    //}
+    i -= 1;
+    if i % 2 == 0 {
+        println!("c o {:.2}+", i as f32 / d as f32);
+    } else {
+        println!("c o {:.2}-", i as f32 / d as f32);
+    }
 
     count
 }
