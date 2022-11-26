@@ -1,5 +1,7 @@
 use crate::utils::ToHashSet;
 use itertools::Itertools;
+//#[cfg(feature = "parallel")]
+use rayon::prelude::*;
 use rug::Integer;
 use std::collections::HashSet;
 use std::fs::read_to_string;
@@ -194,6 +196,8 @@ pub fn count_on_ccg_io(ccg: impl AsRef<Path>, assumptions: &[i32]) -> Integer {
         .collect::<Vec<_>>();
     let node_count = ccg_nodes.len();
 
+    println!("c o a={:?}", assumptions);
+
     let mut nodes = Vec::with_capacity(node_count);
 
     let mut count = Integer::from(0);
@@ -385,13 +389,17 @@ pub fn anytime_cg_count(
     let mut prev = count.clone();
 
     println!("c o d={:?} n={:?} a={:?}", d - 1, n_cycles, assumptions);
+    //println!("c o initial upper bound log10 {:.2}", prev.to_f64().log10());
 
     while i < d {
-        let lambda_i = (0..n_cycles).combinations(i);
+        //let lambda_i = (0..n_cycles).combinations(i);
+        let lambda_i = (0..n_cycles).combinations(i).collect::<Vec<_>>();
         match i % 2 != 0 {
             true =>
             // -
             {
+                //#[cfg(not(feature = "parallel"))]
+                /*
                 for gamma in lambda_i {
                     let mut assumptions_ = gamma
                         .iter()
@@ -403,10 +411,31 @@ pub fn anytime_cg_count(
                     assumptions_.extend(assumptions);
                     count -= count_on_ccg(&ccg_nodes, &assumptions_);
                 }
+                */
+                //#[cfg(feature = "parallel")]
+                let c = lambda_i
+                    .par_iter()
+                    .map(|gamma| {
+                        let mut assumptions_: Vec<i32> = gamma
+                            .iter()
+                            .map(|idx| unsafe { ucs.get_unchecked(*idx) })
+                            .fold(vec![], |mut a, v| {
+                                a.extend(v);
+                                a
+                            });
+                        assumptions_.extend(assumptions);
+                        count_on_ccg(&ccg_nodes, &assumptions_)
+                        //let c_ = count_on_ccg(&ccg_nodes, &assumptions_);
+                        //println!("{:?}", c_);
+                        //c_
+                    })
+                    .sum::<Integer>();
+                count -= c;
             }
             _ =>
             // +
             {
+                /*
                 for gamma in lambda_i {
                     let mut assumptions_ = gamma
                         .iter()
@@ -418,9 +447,32 @@ pub fn anytime_cg_count(
                     assumptions_.extend(assumptions);
                     count += count_on_ccg(&ccg_nodes, &assumptions_);
                 }
+                */
+                let c = lambda_i
+                    .par_iter()
+                    .map(|gamma| {
+                        let mut assumptions_: Vec<i32> = gamma
+                            .iter()
+                            .map(|idx| unsafe { ucs.get_unchecked(*idx) })
+                            .fold(vec![], |mut a, v| {
+                                a.extend(v);
+                                a
+                            });
+                        assumptions_.extend(assumptions);
+                        count_on_ccg(&ccg_nodes, &assumptions_)
+                        //let c_ = count_on_ccg(&ccg_nodes, &assumptions_);
+                        //println!("{:?}", c_);
+                        //c_
+                    })
+                    .sum::<Integer>();
+                count += c;
             }
         }
 
+        let prevl10 = prev.clone().abs().to_f64().log10();
+        let countl10 = count.clone().abs().to_f64().log10();
+        let delta = (prevl10 - countl10).abs();
+        println!("c o delta {:?} {:?} {:?} {:.2}", i, prev, count, delta);
         if prev == count {
             break;
         } else {
@@ -430,11 +482,11 @@ pub fn anytime_cg_count(
         i += 1;
     }
 
-    i -= 1;
+    //i -= 1;
     if i % 2 == 0 {
-        println!("c o {:.2}+", i as f32 / d as f32);
+        println!("c o {:.2}+", i as f32 / n_cycles as f32);
     } else {
-        println!("c o {:.2}-", i as f32 / d as f32);
+        println!("c o {:.2}-", i as f32 / n_cycles as f32);
     }
 
     count
