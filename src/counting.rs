@@ -372,9 +372,10 @@ pub fn anytime_cg_count(
 
     let mut count = count_on_ccg(&ccg_nodes, assumptions);
 
+    /*
     let ucs = cycles_file
         .iter()
-        .filter(|l| !l.starts_with('c'))
+        //.filter(|l| !l.starts_with('c'))
         .map(|l| {
             l.split_whitespace()
                 .map(|i| i32::from_str(i).ok())
@@ -382,24 +383,76 @@ pub fn anytime_cg_count(
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();
-    let n_cycles = ucs.len();
+        */
+
+    #[cfg(not(feature = "prefilter"))]
+    let ucs = cycles_file
+        .iter()
+        .map(|l| {
+            l.split_whitespace()
+                .map(|i| i32::from_str(i).expect("error: reading ucs failed."))
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    #[cfg(feature = "prefilter")]
+    let mut n_unfiltered = 0;
+    #[cfg(feature = "prefilter")]
+    let ucs = cycles_file
+        .iter()
+        .map(|l| {
+            n_unfiltered += 1;
+            l.split_whitespace()
+                .map(|i| i32::from_str(i).expect("error: reading ucs failed."))
+                .collect::<Vec<_>>()
+        })
+        .filter(|c| !assumptions.iter().any(|l| c.contains(&-l)))
+        .collect::<Vec<_>>();
 
     let mut i = 1;
+
+    let n_cycles = ucs.len();
+
+    #[cfg(not(feature = "prefilter"))]
     let d = if depth == 0 { n_cycles + 1 } else { depth + 1 };
+    #[cfg(not(feature = "prefilter"))]
+    println!("c o d={:?} n={:?} a={:?}", d - 1, n_cycles, assumptions);
+
+    #[cfg(feature = "prefilter")]
+    let d = if depth == 0 || depth > n_cycles {
+        n_cycles + 1
+    } else {
+        depth + 1
+    };
+    #[cfg(feature = "prefilter")]
+    println!(
+        "c o d={:?} n={:?} p={:?} a={:?}",
+        d - 1,
+        n_unfiltered,
+        n_cycles,
+        assumptions
+    );
+
+    if count == 0 {
+        println!("c o UNSATISFIABLE");
+        return count;
+    } else {
+        println!("c o 0 {:.2}", count.to_f64().log10());
+    }
+
     let mut prev = count.clone();
 
-    println!("c o d={:?} n={:?} a={:?}", d - 1, n_cycles, assumptions);
-    //println!("c o initial upper bound log10 {:.2}", prev.to_f64().log10());
-
     while i < d {
-        //let lambda_i = (0..n_cycles).combinations(i);
+        #[cfg(feature = "seq")]
+        let lambda_i = (0..n_cycles).combinations(i);
+        #[cfg(not(feature = "seq"))]
         let lambda_i = (0..n_cycles).combinations(i).collect::<Vec<_>>();
+
         match i % 2 != 0 {
             true =>
             // -
             {
-                //#[cfg(not(feature = "parallel"))]
-                /*
+                #[cfg(feature = "seq")]
                 for gamma in lambda_i {
                     let mut assumptions_ = gamma
                         .iter()
@@ -411,31 +464,30 @@ pub fn anytime_cg_count(
                     assumptions_.extend(assumptions);
                     count -= count_on_ccg(&ccg_nodes, &assumptions_);
                 }
-                */
-                //#[cfg(feature = "parallel")]
-                let c = lambda_i
-                    .par_iter()
-                    .map(|gamma| {
-                        let mut assumptions_: Vec<i32> = gamma
-                            .iter()
-                            .map(|idx| unsafe { ucs.get_unchecked(*idx) })
-                            .fold(vec![], |mut a, v| {
-                                a.extend(v);
-                                a
-                            });
-                        assumptions_.extend(assumptions);
-                        count_on_ccg(&ccg_nodes, &assumptions_)
-                        //let c_ = count_on_ccg(&ccg_nodes, &assumptions_);
-                        //println!("{:?}", c_);
-                        //c_
-                    })
-                    .sum::<Integer>();
-                count -= c;
+
+                #[cfg(not(feature = "seq"))]
+                {
+                    let c = lambda_i
+                        .par_iter()
+                        .map(|gamma| {
+                            let mut assumptions_: Vec<i32> = gamma
+                                .iter()
+                                .map(|idx| unsafe { ucs.get_unchecked(*idx) })
+                                .fold(vec![], |mut a, v| {
+                                    a.extend(v);
+                                    a
+                                });
+                            assumptions_.extend(assumptions);
+                            count_on_ccg(&ccg_nodes, &assumptions_)
+                        })
+                        .sum::<Integer>();
+                    count -= c;
+                }
             }
             _ =>
             // +
             {
-                /*
+                #[cfg(feature = "seq")]
                 for gamma in lambda_i {
                     let mut assumptions_ = gamma
                         .iter()
@@ -447,32 +499,37 @@ pub fn anytime_cg_count(
                     assumptions_.extend(assumptions);
                     count += count_on_ccg(&ccg_nodes, &assumptions_);
                 }
-                */
-                let c = lambda_i
-                    .par_iter()
-                    .map(|gamma| {
-                        let mut assumptions_: Vec<i32> = gamma
-                            .iter()
-                            .map(|idx| unsafe { ucs.get_unchecked(*idx) })
-                            .fold(vec![], |mut a, v| {
-                                a.extend(v);
-                                a
-                            });
-                        assumptions_.extend(assumptions);
-                        count_on_ccg(&ccg_nodes, &assumptions_)
-                        //let c_ = count_on_ccg(&ccg_nodes, &assumptions_);
-                        //println!("{:?}", c_);
-                        //c_
-                    })
-                    .sum::<Integer>();
-                count += c;
+
+                #[cfg(not(feature = "seq"))]
+                {
+                    let c = lambda_i
+                        .par_iter()
+                        .map(|gamma| {
+                            let mut assumptions_: Vec<i32> = gamma
+                                .iter()
+                                .map(|idx| unsafe { ucs.get_unchecked(*idx) })
+                                .fold(vec![], |mut a, v| {
+                                    a.extend(v);
+                                    a
+                                });
+                            assumptions_.extend(assumptions);
+                            count_on_ccg(&ccg_nodes, &assumptions_)
+                        })
+                        .sum::<Integer>();
+                    count += c;
+                }
             }
         }
 
         let prevl10 = prev.clone().abs().to_f64().log10();
         let countl10 = count.clone().abs().to_f64().log10();
         let delta = (prevl10 - countl10).abs();
-        println!("c o delta {:?} {:?} {:?} {:.2}", i, prev, count, delta);
+        //println!("c o delta {:?} {:?} {:?} {:.2}", i, prev, count, delta);
+        if delta.is_nan() {
+            println!("c o {:?} 0", i);
+        } else {
+            println!("c o {:?} {:.2}", i, delta);
+        }
         if prev == count {
             break;
         } else {
