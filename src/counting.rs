@@ -1,6 +1,6 @@
 use crate::utils::ToHashSet;
 use itertools::Itertools;
-//#[cfg(feature = "parallel")]
+#[cfg(not(feature = "seq"))]
 use rayon::prelude::*;
 use rug::Integer;
 use std::collections::HashSet;
@@ -417,6 +417,13 @@ pub fn anytime_cg_count(
     let d = if depth == 0 { n_cycles + 1 } else { depth + 1 };
     #[cfg(not(feature = "prefilter"))]
     println!("c o d={:?} n={:?} a={:?}", d - 1, n_cycles, assumptions);
+    #[cfg(feature = "seq")]
+    print!("c o +seq");
+    #[cfg(not(feature = "seq"))]
+    print!("c o");
+    #[cfg(feature = "prefilter")]
+    print!("+prefilter");
+    println!();
 
     #[cfg(feature = "prefilter")]
     let d = if depth == 0 || depth > n_cycles {
@@ -521,14 +528,17 @@ pub fn anytime_cg_count(
             }
         }
 
-        let prevl10 = prev.clone().abs().to_f64().log10();
-        let countl10 = count.clone().abs().to_f64().log10();
-        let delta = (prevl10 - countl10).abs();
-        //println!("c o delta {:?} {:?} {:?} {:.2}", i, prev, count, delta);
-        if delta.is_nan() {
-            println!("c o {:?} 0", i);
-        } else {
-            println!("c o {:?} {:.2}", i, delta);
+        #[cfg(feature = "verbose")]
+        {
+            let prevl10 = prev.clone().abs().to_f64().log10();
+            let countl10 = count.clone().abs().to_f64().log10();
+            let delta = (prevl10 - countl10).abs();
+            //println!("c o delta {:?} {:?} {:?} {:.2}", i, prev, count, delta);
+            if delta.is_nan() {
+                println!("c o {:?} 0", i);
+            } else {
+                println!("c o {:?} {:.2}", i, delta);
+            }
         }
         if prev == count {
             break;
