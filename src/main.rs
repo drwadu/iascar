@@ -42,8 +42,8 @@ fn main() {
         Some("--fa") => {
             read_to_string(iter.next().unwrap_or(&"".to_owned())) // unwrap_unchecked
                 .unwrap()
-                .lines()
-                .map(|l| i32::from_str(l).ok())
+                .split(' ')
+                .map(|l| i32::from_str(l.trim()).ok())
                 .flatten()
                 .collect::<Vec<_>>()
         }
