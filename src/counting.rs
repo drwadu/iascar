@@ -386,7 +386,7 @@ pub fn anytime_cg_count(
         */
 
     #[cfg(not(feature = "prefilter"))]
-    let ucs = cycles_file
+    let mut ucs = cycles_file
         .iter()
         .map(|l| {
             l.split_whitespace()
@@ -398,7 +398,7 @@ pub fn anytime_cg_count(
     #[cfg(feature = "prefilter")]
     let mut n_unfiltered = 0;
     #[cfg(feature = "prefilter")]
-    let ucs = cycles_file
+    let mut ucs = cycles_file
         .iter()
         .map(|l| {
             n_unfiltered += 1;
@@ -420,9 +420,11 @@ pub fn anytime_cg_count(
     #[cfg(feature = "seq")]
     print!("c o +seq");
     #[cfg(not(feature = "seq"))]
-    print!("c o");
+    print!("c o +par");
     #[cfg(feature = "prefilter")]
-    print!("+prefilter");
+    print!(" +pre");
+    #[cfg(feature = "eet")]
+    print!(" +eet");
     println!();
 
     #[cfg(feature = "prefilter")]
@@ -448,6 +450,36 @@ pub fn anytime_cg_count(
     }
 
     let mut prev = count.clone();
+
+    // TODO: fix
+    #[cfg(feature = "eet")]
+    {
+        let mut mem = vec![];
+
+        for (j, u) in ucs.iter().enumerate() {
+            let mut u_ = u.clone();
+            u_.extend(assumptions);
+
+            let c = count_on_ccg(&ccg_nodes, &u);
+
+            #[cfg(feature = "dbg")]
+            println!(":: {:?} {:?}", j, c);
+
+            if c == 0 {
+                mem.push(j);
+                continue;
+            }
+            count -= c;
+        }
+        i += 1;
+        let mut l = 0;
+        mem.iter().for_each(|k| {
+            ucs.remove(*k);
+            l += 1;
+        });
+
+        println!("c o x {:.2}", l as f32 / n_cycles as f32);
+    }
 
     while i < d {
         #[cfg(feature = "seq")]
