@@ -1,8 +1,8 @@
 use crate::utils::ToHashSet;
-#[cfg(not(feature = "sequential_early_termination"))]
+use itertools::Itertools;
+#[cfg(not(feature = "seq"))]
 use rayon::prelude::*;
 use rug::Integer;
-use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fs::read_to_string;
 use std::path::Path;
@@ -186,43 +186,7 @@ pub fn count_on_sddnnf_asp(filename: impl AsRef<Path>, assumptions: &[i32]) -> I
     count
 }
 
-#[allow(unused_mut)]
-pub fn count_on_cg_with_cycles(
-    ccg: impl AsRef<Path>,
-    cycles: std::str::Lines,
-    assumptions: &[i32],
-    mut depth: usize,
-) -> Integer {
-    let cycles_file = cycles.collect::<Vec<_>>();
-    let cycles_mappings = cycles_file.iter().filter(|l| l.starts_with("c "));
-    let mut ccg_mappings: HashMap<String, i32> = HashMap::new();
-    for m in read_to_string(&ccg)
-        .unwrap_or_else(|_| "".to_string())
-        .lines()
-        .filter(|l| l.starts_with("c "))
-    {
-        if !m.is_empty() {
-            let mut line = m.split_whitespace().skip(1);
-            let i = line
-                .next()
-                .and_then(|i| i32::from_str(i).ok())
-                .expect("invalid counting graph.");
-            let s = line.next().expect("invalid counting graph.");
-            ccg_mappings.insert(s.to_string(), i);
-        }
-    }
-    let mut mappings: HashMap<i32, i32> = HashMap::new();
-    for m in cycles_mappings {
-        let mut line = m.split_whitespace().skip(1);
-        let s = line.next().expect("invalid cycles file.");
-        let i = line
-            .next()
-            .and_then(|i| i32::from_str(i).ok())
-            .expect("invalid cycles file.");
-        let j = ccg_mappings.get(s).unwrap();
-        mappings.insert(i, *j);
-    }
-
+pub fn count_on_ccg_io(ccg: impl AsRef<Path>, assumptions: &[i32]) -> Integer {
     let ccg_nodes = read_to_string(ccg)
         .unwrap()
         .lines()
@@ -230,305 +194,78 @@ pub fn count_on_cg_with_cycles(
         .filter(|l| !l.starts_with('c'))
         .map(|s| s.to_string())
         .collect::<Vec<_>>();
+    let node_count = ccg_nodes.len();
 
-    #[cfg(feature = "verbose")]
-    {
-        // println!("c o {}", unsafe { nnf.lines().next().unwrap_unchecked() });
-        print!("c o");
-        assumptions.iter().for_each(|a| print!(" {:?}", a));
-        println!()
-    }
-    let mut count = count_on_ccg(&ccg_nodes, assumptions);
+    println!("c o a={:?}", assumptions);
 
-    // TODO: depth
-    if depth > 0 {
-        #[cfg(feature = "no_undercounting")]
-        #[allow(unused_assignments)]
-        {
-            if depth % 2 != 0 {
-                if depth == 1 {
-                    depth += 1;
-                } else {
-                    depth -= 1;
-                }
+    let mut nodes = Vec::with_capacity(node_count);
+
+    let mut count = Integer::from(0);
+
+    for node in ccg_nodes {
+        let mut spec = node.split_whitespace();
+        match spec.next() {
+            Some("*") => {
+                let n_children = spec
+                    .next()
+                    .and_then(|child| usize::from_str(child).ok())
+                    .unwrap();
+
+                let children_ = &spec
+                    .flat_map(|child| usize::from_str(child).ok())
+                    .collect::<Vec<_>>()[..n_children];
+                let children = children_
+                    .iter()
+                    .map(|idx| unsafe { nodes.get_unchecked(*idx) })
+                    .collect::<Vec<_>>();
+
+                count = children
+                    .iter()
+                    .fold(Integer::from(1), |acc, child_val: &&Integer| {
+                        acc * &(*child_val).clone()
+                    });
+
+                nodes.push(count.clone());
             }
-        }
+            Some("+") => {
+                count = Integer::from(0);
+                let n_children = spec
+                    .next()
+                    .and_then(|child| usize::from_str(child).ok())
+                    .unwrap();
 
-        // if in first alternation, then overlaps of two exclusion routes (inclusion routes of size two)
-        // take routes until alternation depth
-        let mut s = 0;
-        let mut m = 0;
-        let mut routes = vec![];
-        for l in cycles_file.iter().skip(1).filter(|l| !l.starts_with('c')) {
-            if m == depth {
-                break;
-            }
-            match l.starts_with('m') {
-                true => {
-                    routes.push((
-                        0,
-                        l.split(' ')
-                            .skip(1)
-                            .filter_map(|i| {
-                                i32::from_str(i)
-                                    .map(|l| {
-                                        if l < 0 {
-                                            mappings.get(&l.abs()).map(|j| -j)
-                                        } else {
-                                            mappings.get(&l).copied()
-                                        }
-                                    })
-                                    .ok()
-                            })
-                            .flatten()
-                            .collect::<Vec<_>>(),
-                    ));
-                    let s_ = 0;
-                    if s != s_ {
-                        m += 1
-                    }
-                    s = s_;
-                }
-                _ => {
-                    routes.push((
-                        1,
-                        l.split(' ')
-                            .skip(1)
-                            .filter_map(|i| {
-                                i32::from_str(i)
-                                    .map(|l| {
-                                        if l < 0 {
-                                            mappings.get(&l.abs()).map(|j| -j)
-                                        } else {
-                                            mappings.get(&l).copied()
-                                        }
-                                    })
-                                    .ok()
-                            })
-                            .flatten()
-                            .collect::<Vec<_>>(),
-                    ));
-                    let s_ = 1;
-                    if s != s_ {
-                        m += 1
-                    }
-                    s = s_;
-                }
-            }
-        }
+                let children_ = &spec
+                    .flat_map(|child| usize::from_str(child).ok())
+                    .collect::<Vec<_>>()[..n_children];
+                let children = children_
+                    .iter()
+                    .map(|idx| unsafe { nodes.get_unchecked(*idx) })
+                    .collect::<Vec<_>>();
 
-        #[cfg(not(feature = "sequential_early_termination"))]
-        {
-            // par_iter preserves order: https://github.com/rayon-rs/rayon/issues/551
-            let counts = routes
-                .par_iter()
-                .map(|(s, r)| {
-                    let mut delta = assumptions.to_vec().clone();
-                    delta.extend(r);
-                    (s, count_on_ccg(&ccg_nodes, &delta))
-                })
-                .collect::<Vec<_>>();
-
-            for (s, c) in counts {
-                if *s == 0 {
-                    count -= c;
-                } else {
-                    count += c;
-                }
-            }
-        }
-
-        #[cfg(feature = "sequential_early_termination")]
-        {
-            let mut i = 0;
-            #[cfg(feature = "verbose")]
-            {
-                print!("c o ");
-            }
-            let mut count_ = Integer::from(0);
-            let mut s_ = &0; //
-            for (s, r) in routes.iter() {
-                let mut delta = assumptions.to_vec().clone();
-                delta.extend(r);
-                let a = count_on_ccg(&ccg_nodes, &delta);
-
-                if s_ != s && count_ == count {
-                    break;
-                } else {
-                    count_ = count.clone();
-                    s_ = s;
-                }
-
-                if *s == 0 {
-                    count -= a;
-                    #[cfg(feature = "verbose")]
-                    {
-                        print!("-");
-                        i += 1;
-                    }
-                } else {
-                    count += a;
-                    #[cfg(feature = "verbose")]
-                    {
-                        print!("+");
-                        i += 1;
-                    }
-                }
-            }
-            #[cfg(feature = "verbose")]
-            println!("{:?}", i);
-        }
-    } else {
-        #[cfg(not(feature = "sequential_early_termination"))]
-        {
-            let mut ms = vec![];
-            let mut ps = vec![];
-            cycles_file
-                .iter()
-                .skip(1)
-                .filter(|l| !l.starts_with('c'))
-                .for_each(|l| match l.starts_with('m') {
-                    true => ms.push(
-                        l.split(' ')
-                            .skip(1)
-                            .filter_map(|i| {
-                                i32::from_str(i)
-                                    .map(|l| {
-                                        if l < 0 {
-                                            mappings.get(&l.abs()).map(|j| -j)
-                                        } else {
-                                            mappings.get(&l).copied()
-                                        }
-                                    })
-                                    .ok()
-                            })
-                            .flatten()
-                            .collect::<Vec<_>>(),
-                    ),
-                    _ => ps.push(
-                        l.split(' ')
-                            .skip(1)
-                            .filter_map(|i| {
-                                i32::from_str(i)
-                                    .map(|l| {
-                                        if l < 0 {
-                                            mappings.get(&l.abs()).map(|j| -j)
-                                        } else {
-                                            mappings.get(&l).copied()
-                                        }
-                                    })
-                                    .ok()
-                            })
-                            .flatten()
-                            .collect::<Vec<_>>(),
-                    ),
+                children.iter().for_each(|child_val| {
+                    count += &(*child_val).clone();
                 });
 
-            // parallel order-ignoring
-            count -= ms
-                .par_iter()
-                .map(|m| {
-                    let mut delta = assumptions.to_vec().clone();
-                    delta.extend(m);
-                    count_on_ccg(&ccg_nodes, &delta)
-                })
-                .sum::<Integer>();
-            count += ps
-                .par_iter()
-                .map(|p| {
-                    let mut delta = assumptions.to_vec().clone();
-                    delta.extend(p);
-                    count_on_ccg(&ccg_nodes, &delta)
-                })
-                .sum::<Integer>();
-        }
-        #[cfg(feature = "sequential_early_termination")]
-        {
-            #[cfg(feature = "verbose")]
-            print!("c o ");
-            let mut s = 0;
-            #[allow(unused_variables)]
-            let mut m = 0;
-            let mut routes = vec![];
-            for l in cycles_file.iter().skip(1).filter(|l| !l.starts_with('c')) {
-                match l.starts_with('m') {
-                    true => {
-                        routes.push((
-                            0,
-                            l.split(' ')
-                                .skip(1)
-                                .filter_map(|i| {
-                                    i32::from_str(i)
-                                        .map(|l| {
-                                            if l < 0 {
-                                                mappings.get(&l.abs()).map(|j| -j)
-                                            } else {
-                                                mappings.get(&l).copied()
-                                            }
-                                        })
-                                        .ok()
-                                })
-                                .flatten()
-                                .collect::<Vec<_>>(),
-                        ));
-                        let s_ = 0;
-                        if s != s_ {
-                            m += 1
-                        }
-                        s = s_;
-                        #[cfg(feature = "verbose")]
-                        print!("-");
+                nodes.push(count.clone());
+            }
+            o => {
+                let lit = o
+                    .and_then(|l| i32::from_str(l).ok())
+                    .expect("reading literal failed.");
+
+                count = spec
+                    .next()
+                    .and_then(|l| i32::from_str(l).map(Integer::from).ok())
+                    .expect("reading val failed.");
+
+                match assumptions.contains(&-lit) {
+                    false => {
+                        nodes.push(count.clone());
                     }
                     _ => {
-                        routes.push((
-                            1,
-                            l.split(' ')
-                                .skip(1)
-                                .filter_map(|i| {
-                                    i32::from_str(i)
-                                        .map(|l| {
-                                            if l < 0 {
-                                                mappings.get(&l.abs()).map(|j| -j)
-                                            } else {
-                                                mappings.get(&l).copied()
-                                            }
-                                        })
-                                        .ok()
-                                })
-                                .flatten()
-                                .collect::<Vec<_>>(),
-                        ));
-                        let s_ = 1;
-                        if s != s_ {
-                            m += 1
-                        }
-                        s = s_;
-                        #[cfg(feature = "verbose")]
-                        print!("+");
+                        count = Integer::from(0);
+                        nodes.push(count.clone());
                     }
-                }
-            }
-            #[cfg(feature = "verbose")]
-            println!();
-
-            let mut count_ = Integer::from(0);
-            let mut s_ = &0;
-            for (s, r) in routes.iter() {
-                let mut delta = assumptions.to_vec().clone();
-                delta.extend(r);
-                let a = count_on_ccg(&ccg_nodes, &delta);
-
-                if s_ != s && count_ == count {
-                    break;
-                } else {
-                    count_ = count.clone();
-                    s_ = s;
-                }
-
-                if *s == 0 {
-                    count -= a;
-                } else {
-                    count += a;
                 }
             }
         }
@@ -617,161 +354,6 @@ fn count_on_ccg(ccg: &[String], assumptions: &[i32]) -> Integer {
     count
 }
 
-pub fn count_on_cg(filename: impl AsRef<Path>, assumptions: &[i32]) -> Integer {
-    let nnf = read_to_string(&filename).unwrap_or_else(|_| "".to_string());
-
-    #[cfg(feature = "verbose")]
-    {
-        println!("c o {}", unsafe { nnf.lines().next().unwrap_unchecked() });
-        print!("c o");
-        assumptions.iter().for_each(|a| print!(" {:?}", a));
-        println!()
-    }
-
-    let mut lines = nnf.lines().filter(|l| !l.starts_with("c "));
-
-    /*
-    if assumptions.is_empty() {
-        return lines
-            .next()
-            .and_then(|stats| stats.split_whitespace().last())
-            .and_then(|c| f64::from_str(c).ok())
-            .map(|l| 10f64.powf(l).round() as u128)
-            .map(Integer::from)
-            .expect("cannot parse count.");
-    }
-    */
-
-    let node_count = lines
-        .next()
-        .and_then(|stats| stats.split_whitespace().nth(1))
-        .and_then(|s| usize::from_str(s).ok())
-        .expect("reading node count failed.");
-
-    let mut nodes = Vec::with_capacity(node_count);
-
-    let mut count = Integer::from(0);
-
-    lines.for_each(|line| {
-        let mut spec = line.split_whitespace();
-        match spec.next() {
-            Some("*") => {
-                let n_children = spec
-                    .next()
-                    .and_then(|child| usize::from_str(child).ok())
-                    .unwrap();
-
-                let children_ = &spec
-                    .flat_map(|child| usize::from_str(child).ok())
-                    .collect::<Vec<_>>()[..n_children];
-                let children = children_
-                    .iter()
-                    .map(|idx| unsafe { nodes.get_unchecked(*idx) })
-                    .collect::<Vec<_>>();
-
-                count = children
-                    .iter()
-                    .fold(Integer::from(1), |acc, child_val: &&Integer| {
-                        acc * &(*child_val).clone()
-                    });
-
-                nodes.push(count.clone());
-            }
-            Some("+") => {
-                count = Integer::from(0);
-                let n_children = spec
-                    .next()
-                    .and_then(|child| usize::from_str(child).ok())
-                    .unwrap(); // TODO
-
-                let children_ = &spec
-                    .flat_map(|child| usize::from_str(child).ok())
-                    .collect::<Vec<_>>()[..n_children];
-                let children = children_
-                    .iter()
-                    .map(|idx| unsafe { nodes.get_unchecked(*idx) })
-                    .collect::<Vec<_>>();
-
-                children.iter().for_each(|child_val| {
-                    count += &(*child_val).clone();
-                });
-
-                nodes.push(count.clone());
-            }
-            o => {
-                let lit = o
-                    .and_then(|l| i32::from_str(l).ok())
-                    .expect("reading literal failed.");
-
-                count = spec
-                    .next()
-                    .and_then(|l| i32::from_str(l).map(Integer::from).ok())
-                    .expect("reading val failed.");
-
-                match assumptions.contains(&-lit) {
-                    false => {
-                        nodes.push(count.clone());
-                    }
-                    _ => {
-                        count = Integer::from(0);
-                        nodes.push(count.clone());
-                    }
-                }
-            }
-        }
-    });
-
-    count
-}
-
-//
-
-//use itertools::partition;
-//pub fn anytime_refinement_count_on_ccg(
-//    cg_path: impl AsRef<Path>,
-//    cycles_lines: std::str::Lines,
-//    assumptions: &[i32],
-//    depth: usize,
-//) -> Integer {
-//    // let cg = read_to_string(&cg_path).expect("reading counting graph failed.");
-//    //let (ccg, ccg_mappings): (Vec<_>, Vec<&str>) = read_to_string(&cg_path)
-//    //    .expect("reading counting graph failed.")
-//    //    .lines()
-//    //    .partition(|l| l.starts_with("c "));
-//    //let mut cg_literal_mappings: HashMap<String, i32> = HashMap::new();
-//    //for mapping in ccg_mappings {
-//    //    if !mapping.is_empty() {
-//    //        let mut line = mapping.split_whitespace().skip(1);
-//    //        let i = line
-//    //            .next()
-//    //            .and_then(|i| i32::from_str(i).ok())
-//    //            .expect("invalid counting graph.");
-//    //        let s = line.next().expect("invalid counting graph.");
-//    //        cg_literal_mappings.insert(s.to_string(), i);
-//    //    }
-//    //}
-//
-//    //// let cycles_file = cycles.collect::<Vec<_>>();
-//    //let (cycles, mappings): (Vec<_>, Vec<&str>) = cycles_lines.partition(|l| l.starts_with("c "));
-//    //let mut cycles_literal_mappings: HashMap<i32, i32> = HashMap::new();
-//    //for m in mappings {
-//    //    let mut line = m.split_whitespace().skip(1);
-//    //    let i = line
-//    //        .next()
-//    //        .and_then(|i| i32::from_str(i).ok())
-//    //        .expect("invalid cycles file.");
-//    //    let s = line.next().expect("invalid cycles file.");
-//    //    let j = cg_literal_mappings.get(s).unwrap();
-//    //    cycles_literal_mappings.insert(i, *j);
-//    //}
-//
-//    unimplemented!()
-//}
-
-/////////////////////////////////////////////////
-
-use itertools::Itertools;
-
 pub fn anytime_cg_count(
     ccg: impl AsRef<Path>,
     cycles: std::str::Lines,
@@ -790,9 +372,10 @@ pub fn anytime_cg_count(
 
     let mut count = count_on_ccg(&ccg_nodes, assumptions);
 
+    /*
     let ucs = cycles_file
         .iter()
-        .filter(|l| !l.starts_with('c'))
+        //.filter(|l| !l.starts_with('c'))
         .map(|l| {
             l.split_whitespace()
                 .map(|i| i32::from_str(i).ok())
@@ -800,47 +383,195 @@ pub fn anytime_cg_count(
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();
-    let n_cycles = ucs.len();
+        */
+
+    #[cfg(not(feature = "prefilter"))]
+    let mut ucs = cycles_file
+        .iter()
+        .map(|l| {
+            l.split_whitespace()
+                .map(|i| i32::from_str(i).expect("error: reading ucs failed."))
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+
+    #[cfg(feature = "prefilter")]
+    let mut n_unfiltered = 0;
+    #[cfg(feature = "prefilter")]
+    let mut ucs = cycles_file
+        .iter()
+        .map(|l| {
+            n_unfiltered += 1;
+            l.split_whitespace()
+                .map(|i| i32::from_str(i).expect("error: reading ucs failed."))
+                .collect::<Vec<_>>()
+        })
+        .filter(|c| !assumptions.iter().any(|l| c.contains(&-l)))
+        .collect::<Vec<_>>();
 
     let mut i = 1;
+
+    let n_cycles = ucs.len();
+
+    #[cfg(not(feature = "prefilter"))]
     let d = if depth == 0 { n_cycles + 1 } else { depth + 1 };
-    let mut prev = count.clone();
-    #[cfg(feature = "verbose")]
+    #[cfg(not(feature = "prefilter"))]
     println!("c o d={:?} n={:?} a={:?}", d - 1, n_cycles, assumptions);
+    #[cfg(feature = "seq")]
+    print!("c o +seq");
+    #[cfg(not(feature = "seq"))]
+    print!("c o +par");
+    #[cfg(feature = "prefilter")]
+    print!(" +pre");
+    #[cfg(feature = "eet")]
+    print!(" +eet");
+    println!();
+
+    #[cfg(feature = "prefilter")]
+    let d = if depth == 0 || depth > n_cycles {
+        n_cycles + 1
+    } else {
+        depth + 1
+    };
+    #[cfg(feature = "prefilter")]
+    println!(
+        "c o d={:?} n={:?} p={:?} a={:?}",
+        d - 1,
+        n_unfiltered,
+        n_cycles,
+        assumptions
+    );
+
+    if count == 0 {
+        println!("c o UNSATISFIABLE");
+        return count;
+    } else {
+        println!("c o 0 {:.2}", count.to_f64().log10());
+    }
+
+    let mut prev = count.clone();
+
+    // TODO: fix
+    #[cfg(feature = "eet")]
+    {
+        let mut mem = vec![];
+
+        for (j, u) in ucs.iter().enumerate() {
+            let mut u_ = u.clone();
+            u_.extend(assumptions);
+
+            let c = count_on_ccg(&ccg_nodes, &u);
+
+            #[cfg(feature = "dbg")]
+            println!(":: {:?} {:?}", j, c);
+
+            if c == 0 {
+                mem.push(j);
+                continue;
+            }
+            count -= c;
+        }
+        i += 1;
+        let mut l = 0;
+        mem.iter().for_each(|k| {
+            ucs.remove(*k);
+            l += 1;
+        });
+
+        println!("c o x {:.2}", l as f32 / n_cycles as f32);
+    }
 
     while i < d {
+        #[cfg(feature = "seq")]
         let lambda_i = (0..n_cycles).combinations(i);
+        #[cfg(not(feature = "seq"))]
+        let lambda_i = (0..n_cycles).combinations(i).collect::<Vec<_>>();
+
         match i % 2 != 0 {
             true =>
             // -
             {
+                #[cfg(feature = "seq")]
                 for gamma in lambda_i {
-                    let assumptions = gamma
+                    let mut assumptions_ = gamma
                         .iter()
                         .map(|idx| unsafe { ucs.get_unchecked(*idx) })
                         .fold(vec![], |mut a, v| {
                             a.extend(v);
                             a
                         });
-                    count -= count_on_ccg(&ccg_nodes, &assumptions);
+                    assumptions_.extend(assumptions);
+                    count -= count_on_ccg(&ccg_nodes, &assumptions_);
+                }
+
+                #[cfg(not(feature = "seq"))]
+                {
+                    let c = lambda_i
+                        .par_iter()
+                        .map(|gamma| {
+                            let mut assumptions_: Vec<i32> = gamma
+                                .iter()
+                                .map(|idx| unsafe { ucs.get_unchecked(*idx) })
+                                .fold(vec![], |mut a, v| {
+                                    a.extend(v);
+                                    a
+                                });
+                            assumptions_.extend(assumptions);
+                            count_on_ccg(&ccg_nodes, &assumptions_)
+                        })
+                        .sum::<Integer>();
+                    count -= c;
                 }
             }
             _ =>
             // +
             {
+                #[cfg(feature = "seq")]
                 for gamma in lambda_i {
-                    let assumptions = gamma
+                    let mut assumptions_ = gamma
                         .iter()
                         .map(|idx| unsafe { ucs.get_unchecked(*idx) })
                         .fold(vec![], |mut a, v| {
                             a.extend(v);
                             a
                         });
-                    count += count_on_ccg(&ccg_nodes, &assumptions);
+                    assumptions_.extend(assumptions);
+                    count += count_on_ccg(&ccg_nodes, &assumptions_);
+                }
+
+                #[cfg(not(feature = "seq"))]
+                {
+                    let c = lambda_i
+                        .par_iter()
+                        .map(|gamma| {
+                            let mut assumptions_: Vec<i32> = gamma
+                                .iter()
+                                .map(|idx| unsafe { ucs.get_unchecked(*idx) })
+                                .fold(vec![], |mut a, v| {
+                                    a.extend(v);
+                                    a
+                                });
+                            assumptions_.extend(assumptions);
+                            count_on_ccg(&ccg_nodes, &assumptions_)
+                        })
+                        .sum::<Integer>();
+                    count += c;
                 }
             }
         }
 
+        #[cfg(feature = "verbose")]
+        {
+            let prevl10 = prev.clone().abs().to_f64().log10();
+            let countl10 = count.clone().abs().to_f64().log10();
+            let delta = (prevl10 - countl10).abs();
+            //println!("c o delta {:?} {:?} {:?} {:.2}", i, prev, count, delta);
+            if delta.is_nan() {
+                println!("c o {:?} 0", i);
+            } else {
+                println!("c o {:?} {:.2}", i, delta);
+            }
+        }
         if prev == count {
             break;
         } else {
@@ -850,13 +581,11 @@ pub fn anytime_cg_count(
         i += 1;
     }
 
-    #[cfg(feature = "verbose")]
-    {
-        if i % 2 == 0 {
-            println!("c o {:.2}+", i as f32 / d as f32)
-        } else {
-            println!("c o {:.2}-", i as f32 / d as f32)
-        }
+    //i -= 1;
+    if i % 2 == 0 {
+        println!("c o {:.2}+", i as f32 / n_cycles as f32);
+    } else {
+        println!("c o {:.2}-", i as f32 / n_cycles as f32);
     }
 
     count

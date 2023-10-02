@@ -10,13 +10,13 @@ keywords = ["propositional model counting", "answer set programming", "logic pro
 license = "LGPL-2.1"
 
 [dependencies]
-clingo = { git = "https://github.com/drwadu/clingo-rs", branch = "backport-0.6/issue43" }
 rug = "1.16.0"
 itertools = "0.10.5"
-thiserror = "1.0.30"
 rayon = "1.5"
 
 [features]
-no_undercounting = []
-sequential_early_termination = []
 verbose = []
+prefilter = []
+seq = []
+eet = []
+dbg = []
