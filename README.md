@@ -1,3 +1,6 @@
+[![Crates.io](https://img.shields.io/crates/v/iascar?label=crates.io%20%28bin%29)](https://crates.io/crates/iascar)
+![build workflow](https://github.com/drwadu/iascar/actions/workflows/build.yml/badge.svg)
+![test workflow](https://github.com/drwadu/iascar/actions/workflows/test.yml/badge.svg)
 # iascar - Incremental Answer Set Counter with Anytime Refinement
 
 
