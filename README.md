@@ -52,3 +52,6 @@ s SATISFIABLE
 c s log10-estimate 0.7781512503836436
 c s exact arb int 6
 ```
+
+* to count on nnfs based on answer set programs use `-nnf -in nnf_path`
+* to count on arbitrary nnfs use `-nnfarb -in nnf_path`
