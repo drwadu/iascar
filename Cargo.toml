@@ -2,12 +2,11 @@
 name = "iascar"
 version = "0.1.0"
 edition = "2021"
-authors = ["drwadu <alamzan94@live.de>"]
+authors = ["drwadu"]
 readme = "README.md"
 description = "iascar - incremental answer set count with anytime refinement"
 repository = "https://github.com/drwadu/iascar"
-keywords = ["propositional model counting", "answer set programming", "logic programming"]
-license = "LGPL-2.1"
+license = "MIT"
 
 [dependencies]
 rug = "1.16.0"
@@ -19,8 +18,6 @@ thiserror = "1.0"
 [features]
 prefilter = []
 seq = []
-eet = []
-dbg = []
 
 [lib]
 name = "iascar"
@@ -28,3 +25,8 @@ path = "src/lib.rs"
 test = true
 edition = "2021"       
 crate-type = ["lib"]   
+
+[[bin]]
+name = "iascar"
+path = "src/main.rs"
+edition = "2021"       

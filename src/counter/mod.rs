@@ -205,21 +205,11 @@ mod tests {
 
     #[test]
     fn count_tiny() -> Result<()> {
-        let counter = Counter::new("example.ccg")?;
+        let counter = Counter::new("examples/example.lp.as.cnf.nnf.ccg")?;
         println!("{:?}", counter.count(["a"].iter()));
         println!("{:?}", counter.count(["~a"].iter()));
         println!("{:?}", counter.facet_count(["a"].iter()));
         println!("{:?}", counter.facet_count(["~a"].iter()));
-        Ok(())
-    }
-
-    #[test]
-    fn count_8q() -> Result<()> {
-        let counter = Counter::new("8_queens.ccg")?;
-        println!("{:?}", counter.count(["q(1,1)"].iter()));
-        println!("{:?}", counter.count(["~q(1,1)"].iter()));
-        println!("{:?}", counter.facet_count(["q(1,1)"].iter()));
-        println!("{:?}", counter.facet_count(["~q(1,1)"].iter()));
         Ok(())
     }
 }
