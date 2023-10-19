@@ -2,10 +2,10 @@
 name = "iascar"
 version = "0.1.0"
 edition = "2021"
-authors = ["Dominik Rusovac <dominik.rusovac@hotmail.com>"]
+authors = ["drwadu <alamzan94@live.de>"]
 readme = "README.md"
-description = "Rust Port of the iascar counter"
-repository = "https://github.com/drwadu/soe"
+description = "iascar - incremental answer set count with anytime refinement"
+repository = "https://github.com/drwadu/iascar"
 keywords = ["propositional model counting", "answer set programming", "logic programming"]
 license = "LGPL-2.1"
 
@@ -13,10 +13,18 @@ license = "LGPL-2.1"
 rug = "1.16.0"
 itertools = "0.10.5"
 rayon = "1.5"
+clingo = { version = "0.7.2", features = ["static-linking"] }
+thiserror = "1.0"
 
 [features]
-verbose = []
 prefilter = []
 seq = []
 eet = []
 dbg = []
+
+[lib]
+name = "iascar"
+path = "src/lib.rs"
+test = true
+edition = "2021"       
+crate-type = ["lib"]   

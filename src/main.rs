@@ -1,127 +1,187 @@
 #![deny(clippy::all)]
 
+mod compressor;
+mod counter;
 mod counting;
 mod utils;
 
+use std::env::Args;
 use std::fs::read_to_string;
+use std::iter::Skip;
 use std::str::FromStr;
 
-pub const AND: u8 = 1;
-pub const OR: u8 = 0;
+pub(crate) const AND: u8 = 1;
+pub(crate) const OR: u8 = 0;
+pub(crate) const SAND: &'static str = "*";
+pub(crate) const SOR: &'static str = "+";
+
+fn read_assumptions(mut args: Skip<Args>) -> Vec<i32> {
+    match args.next().as_deref() {
+        Some("-a") => args
+            .map(|l| i32::from_str(l.trim()).ok())
+            .flatten()
+            .collect::<Vec<_>>(),
+        Some("-fa") => args
+            .next()
+            .and_then(|f| read_to_string(f).ok())
+            .map(|s| {
+                s.split_whitespace()
+                    .map(|l| i32::from_str(l.trim()).ok())
+                    .flatten()
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or(vec![]),
+        _ => vec![],
+    }
+}
 
 fn main() {
     let mut args = std::env::args().skip(1);
 
-    let nnf_file = match args.next() {
-        Some(path) => path,
-        _ => {
-            println!("\nprovide .nnf file path.\n");
+    #[allow(unreachable_code)]
+    match args.next().as_deref() {
+        Some("-ccg") => args
+            .next()
+            .and_then(|s| if s.trim() == "-in" { args.next() } else { None })
+            .map_or_else(
+                || {
+                    println!("error: provide ccg file path with {:?}.", "-in path");
+                    std::process::exit(-1)
+                },
+                |f| {
+                    let count = counting::count_on_ccg_io(f, &read_assumptions(args));
+                    if count > rug::Integer::from(0) {
+                        println!("s SATISFIABLE");
+                        println!("c s log10-estimate {:?}", count.to_f64().log10());
+                        println!("c s exact arb int {:?}", count);
+                    } else {
+                        println!("s UNSATISFIABLE")
+                    }
+                },
+            ),
+        Some("-com") => args
+            .next()
+            .and_then(|s| if s == "-lp" { args.next() } else { None })
+            .zip({
+                if args.next().as_deref() == Some("-cnf") {
+                    args.next()
+                } else {
+                    None
+                }
+            })
+            .zip({
+                if args.next().as_deref() == Some("-nnf") {
+                    args.next()
+                } else {
+                    None
+                }
+            })
+            .map(|((lp, cnf), nnf)| compressor::compress_(nnf, lp, cnf))
+            .unwrap_or_else(|| {
+                println!(
+                    "error: please provide input in the following order {:?}.",
+                    "-lp logic_program_path -cnf cnf_path -nnf nnf_path"
+                );
+                std::process::exit(-1)
+            })
+            .err()
+            .map(|err| {
+                println!("error: {:?}.", err.to_string());
+                std::process::exit(-1)
+            })
+            .unwrap_or(()),
+        Some("-car") => args
+            .next()
+            .and_then(|s| if s == "-ccg" { args.next() } else { None })
+            .zip({
+                if args.next().as_deref() == Some("-ucs") {
+                    args.next().and_then(|f| read_to_string(f).ok())
+                } else {
+                    None
+                }
+            })
+            .zip({
+                if args.next().as_deref() == Some("-dep") {
+                    match args.next().as_deref().map(usize::from_str) {
+                        Some(Ok(u)) => Some(u),
+                        Some(Err(e)) => {
+                            println!("error: {:?}.", e.to_string());
+                            std::process::exit(-1)
+                        }
+                        _ => {
+                            println!("error: provide depth with {:?}.", "-dep int");
+                            std::process::exit(-1)
+                        }
+                    }
+                } else {
+                    Some(0)
+                }
+            })
+            .map_or_else(
+                || {
+                    println!(
+                        "error: please provide input in the following order {:?}.",
+                        "-ccg counting_graph -ucs unsupported_constraints -dep alternation_depth"
+                    );
+                    std::process::exit(-1)
+                },
+                |((ccg, ucs), dep)| {
+                    let count =
+                        counting::anytime_cg_count(ccg, ucs.lines(), &read_assumptions(args), dep);
+                    if count > rug::Integer::from(0) {
+                        println!("s SATISFIABLE");
+                        println!("c s log10-estimate {:?}", count.to_f64().log10());
+                        println!("c s exact arb int {:?}", count);
+                    } else {
+                        println!("s UNSATISFIABLE")
+                    }
+                },
+            ),
+        Some("-nnf") => args
+            .next()
+            .and_then(|s| if s.trim() == "-in" { args.next() } else { None })
+            .map_or_else(
+                || {
+                    println!("error: provide nnf file path with {:?}.", "-in path");
+                    std::process::exit(-1)
+                },
+                |f| {
+                    let count = counting::count_on_sddnnf_asp(f, &read_assumptions(args));
+                    if count > rug::Integer::from(0) {
+                        println!("s SATISFIABLE");
+                        println!("c s log10-estimate {:?}", count.to_f64().log10());
+                        println!("c s exact arb int {:?}", count);
+                    } else {
+                        println!("s UNSATISFIABLE")
+                    }
+                },
+            ),
+        Some("-nnfarb") => args
+            .next()
+            .and_then(|s| if s.trim() == "-in" { args.next() } else { None })
+            .map_or_else(
+                || {
+                    println!("error: provide nnf file path with {:?}.", "-in path");
+                    std::process::exit(-1)
+                },
+                |f| {
+                    let count = counting::count_on_sddnnf(f, &read_assumptions(args));
+                    if count > rug::Integer::from(0) {
+                        println!("s SATISFIABLE");
+                        println!("c s log10-estimate {:?}", count.to_f64().log10());
+                        println!("c s exact arb int {:?}", count);
+                    } else {
+                        println!("s UNSATISFIABLE")
+                    }
+                },
+            ),
+        Some(s) => {
+            println!("error: unknown operation {:?}.", s);
             std::process::exit(-1)
         }
-    };
-
-    #[cfg(feature = "verbose")]
-    {
-        println!(
-            "c o {} version {}\nc o reading from {}",
-            env!("CARGO_PKG_NAME"),
-            env!("CARGO_PKG_VERSION"),
-            nnf_file
-        );
-    }
-
-    let inputs = args.collect::<Vec<_>>();
-    let mut iter = inputs.iter();
-    let assumptions = match iter.next().map(String::as_str) {
-        Some("--a") => inputs[1..]
-            .iter()
-            .map(String::as_str)
-            .map(i32::from_str)
-            .flatten()
-            .collect::<Vec<_>>(),
-        Some("--fa") => {
-            read_to_string(iter.next().unwrap_or(&"".to_owned())) // unwrap_unchecked
-                .unwrap()
-                .split(' ')
-                .map(|l| i32::from_str(l.trim()).ok())
-                .flatten()
-                .collect::<Vec<_>>()
-        }
-        _ => vec![],
-    };
-
-    if inputs.contains(&"--cccg".to_owned()) {
-        #[cfg(not(feature = "verbose"))]
-        println!("{:?}", counting::count_on_ccg_io(nnf_file, &assumptions));
-        #[cfg(feature = "verbose")]
-        {
-            let count = counting::count_on_ccg_io(nnf_file, &assumptions);
-            if count > rug::Integer::from(0) {
-                println!("s SATISFIABLE");
-                println!("c s log10-estimate {:?}", count.to_f64().log10());
-                println!("c s exact arb int {:?}", count);
-            } else {
-                println!("s UNSATISFIABLE")
-            }
-        }
-    } else if inputs.contains(&"--cnnf".to_owned()) {
-        #[cfg(not(feature = "verbose"))]
-        println!("{:?}", counting::count_on_sddnnf(nnf_file, &assumptions));
-        #[cfg(feature = "verbose")]
-        {
-            let count = counting::count_on_sddnnf(nnf_file, &assumptions);
-            if count > rug::Integer::from(0) {
-                println!("s SATISFIABLE");
-                println!("c s log10-estimate {:?}", count.to_f64().log10());
-                println!("c s exact arb int {:?}", count);
-            } else {
-                println!("s UNSATISFIABLE")
-            }
-        }
-    } else if inputs.contains(&"--cnnfasp".to_owned()) {
-        #[cfg(not(feature = "verbose"))]
-        println!(
-            "{:?}",
-            counting::count_on_sddnnf_asp(nnf_file, &assumptions)
-        );
-        #[cfg(feature = "verbose")]
-        {
-            let count = counting::count_on_sddnnf_asp(nnf_file, &assumptions);
-            if count > rug::Integer::from(0) {
-                println!("s SATISFIABLE");
-                println!("c s type cnnfasp");
-                println!("c s log10-estimate {:?}", count.to_f64().log10());
-                println!("c s exact arb int {:?}", count);
-            } else {
-                println!("s UNSATISFIABLE")
-            }
-        }
-    } else {
-        let mut dpcs_file = nnf_file.clone();
-        dpcs_file = format!("{}.ucs", dpcs_file);
-        let dpcs = read_to_string(dpcs_file).expect("error occurred during reading cycles.");
-        let lines = dpcs.lines();
-        let depth = match inputs.iter().find(|s| s.starts_with("--d=")) {
-            Some(s) => s.split('=').nth(1).map(usize::from_str).unwrap().unwrap(),
-            _ => 0,
-        };
-
-        #[cfg(not(feature = "verbose"))]
-        println!(
-            "{:?}",
-            counting::anytime_cg_count(nnf_file, lines, &assumptions, depth)
-        );
-
-        #[cfg(feature = "verbose")]
-        {
-            let count = counting::anytime_cg_count(nnf_file, lines, &assumptions, depth);
-            if count > rug::Integer::from(0) {
-                println!("s SATISFIABLE");
-                println!("c s log10-estimate {:?}", count.to_f64().log10());
-                println!("c s exact arb int {:?}", count);
-            } else {
-                println!("s UNSATISFIABLE")
-            }
+        _ => {
+            println!("error: specify operation.");
+            std::process::exit(-1)
         }
     }
 }
