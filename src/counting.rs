@@ -446,7 +446,7 @@ pub fn anytime_cg_count(
         println!("c o UNSATISFIABLE");
         return count;
     } else {
-        println!("c o 0 {:.2}", count.to_f64().log10());
+        println!("c o 0 {:?}", count);
     }
 
     let mut prev = count.clone();
