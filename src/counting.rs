@@ -562,15 +562,7 @@ pub fn anytime_cg_count(
 
         #[cfg(feature = "verbose")]
         {
-            let prevl10 = prev.clone().abs().to_f64().log10();
-            let countl10 = count.clone().abs().to_f64().log10();
-            let delta = (prevl10 - countl10).abs();
-            //println!("c o delta {:?} {:?} {:?} {:.2}", i, prev, count, delta);
-            if delta.is_nan() {
-                println!("c o {:?} 0", i);
-            } else {
-                println!("c o {:?} {:.2}", i, delta);
-            }
+            println!("c o {:?} {:?}", i, count);
         }
         if prev == count {
             break;
@@ -581,8 +573,7 @@ pub fn anytime_cg_count(
         i += 1;
     }
 
-    //i -= 1;
-    if i % 2 == 0 {
+    if (i-1) % 2 == 0 {
         println!("c o {:.2}+", i as f32 / n_cycles as f32);
     } else {
         println!("c o {:.2}-", i as f32 / n_cycles as f32);
