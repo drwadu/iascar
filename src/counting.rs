@@ -372,21 +372,8 @@ pub fn anytime_cg_count(
 
     let mut count = count_on_ccg(&ccg_nodes, assumptions);
 
-    /*
-    let ucs = cycles_file
-        .iter()
-        //.filter(|l| !l.starts_with('c'))
-        .map(|l| {
-            l.split_whitespace()
-                .map(|i| i32::from_str(i).ok())
-                .flatten()
-                .collect::<Vec<_>>()
-        })
-        .collect::<Vec<_>>();
-        */
-
     #[cfg(not(feature = "prefilter"))]
-    let mut ucs = cycles_file
+    let ucs = cycles_file
         .iter()
         .map(|l| {
             l.split_whitespace()
@@ -573,10 +560,10 @@ pub fn anytime_cg_count(
         i += 1;
     }
 
-    if (i-1) % 2 == 0 {
-        println!("c o {:.2}+", i as f32 / n_cycles as f32);
+    if (i - 1) % 2 == 0 {
+        println!("c o +");
     } else {
-        println!("c o {:.2}-", i as f32 / n_cycles as f32);
+        println!("c o -");
     }
 
     count
