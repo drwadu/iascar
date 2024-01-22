@@ -56,7 +56,7 @@ c s exact arb int 6
     * uses clingo, hence clingo arguments are permitted, e.g., `--supp-models`
       to count supported models. in particular provide an integer to declare
       the max. number of answer sets to count. `0` stands fo no bound. if
-      you provide no integer, iascar will count up to 1 answer set.
+      you provide no integer, iascar will count up to 1 answer set
     * prepend `%` to assumptions where `l` stands for a positive literal and `~l` stands for a negative literal 
 ```
 iascar -enum -in examples/example.lp 0 %a %~f
