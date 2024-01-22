@@ -3,6 +3,7 @@ use itertools::Itertools;
 #[cfg(not(feature = "seq"))]
 use rayon::prelude::*;
 use rug::Integer;
+use savan::nav::Navigator;
 use std::collections::HashSet;
 use std::fs::read_to_string;
 use std::path::Path;
@@ -749,4 +750,33 @@ pub fn anytime_cg_count_with_filtering(
     }
 
     count
+}
+
+pub fn count_by_enumeration<S: ToString>(
+    lp_path: impl AsRef<Path>,
+    args: Vec<String>,
+    assumptions: impl Iterator<Item = S>,
+) -> usize {
+    let source = match read_to_string(lp_path) {
+        Ok(s) => s,
+        Err(err) => {
+            println!("error: {err}");
+            std::process::exit(-1)
+        }
+    };
+    let mut nav = match Navigator::new(source, args) {
+        Ok(n) => n,
+        Err(err) => {
+            println!("error: {err}");
+            std::process::exit(-1)
+        }
+    };
+
+    match nav.enumerate_solutions_quietly(None, assumptions) {
+        Ok(n) => n,
+        Err(err) => {
+            println!("error: {err}");
+            std::process::exit(-1)
+        }
+    }
 }

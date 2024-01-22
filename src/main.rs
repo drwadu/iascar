@@ -175,6 +175,32 @@ fn main() {
                     }
                 },
             ),
+        Some("-enum") => args
+            .next()
+            .and_then(|s| if s.trim() == "-in" { args.next() } else { None })
+            .map_or_else(
+                || {
+                    println!("error: provide program file path with {:?}.", "-in path");
+                    std::process::exit(-1)
+                },
+                |f| {
+                    let (mut assumptions, clingo_args): (Vec<String>, Vec<String>) =
+                        args.partition(|x| x.contains('%'));
+                    assumptions = assumptions
+                        .iter()
+                        .map(|x| x[1..].to_owned())
+                        .collect::<Vec<String>>();
+                    println!("c {:?}", &clingo_args);
+                    println!("c {:?}", &assumptions);
+                    let count = counting::count_by_enumeration(f, clingo_args, assumptions.iter());
+                    if count > 0 {
+                        println!("s SATISFIABLE");
+                        println!("c s exact arb int {:?}", count);
+                    } else {
+                        println!("s UNSATISFIABLE")
+                    }
+                },
+            ),
         Some(s) => {
             println!("error: unknown operation {:?}.", s);
             std::process::exit(-1)

@@ -52,6 +52,19 @@ s SATISFIABLE
 c s log10-estimate 0.7781512503836436
 c s exact arb int 6
 ```
+* count answer sets using enumeration
+    * uses clingo, hence clingo arguments are permitted, e.g., `--supp-models`
+      to count supported models. in particular provide an integer to declare
+      the max. number of answer sets to count. `0` stands fo no bound. if
+      you provide no integer, iascar will count up to 1 answer set.
+    * prepend `%` to assumptions where `l` stands for a positive literal and `~l` stands for a negative literal 
+```
+iascar -enum -in examples/example.lp 0 %a %~f
+c ["0"]
+c ["a", "~f"]
+s SATISFIABLE
+c s exact arb int 1
+```
 
 * to count on nnfs based on answer set programs use `-nnf -in nnf_path`
 * to count on arbitrary nnfs use `-nnfarb -in nnf_path`
