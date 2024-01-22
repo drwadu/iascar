@@ -1,12 +1,14 @@
 [![Crates.io](https://img.shields.io/crates/v/iascar?label=crates.io%20%28bin%29)](https://crates.io/crates/iascar)
 ![build workflow](https://github.com/drwadu/iascar/actions/workflows/build.yml/badge.svg)
-# iascar - Incremental Answer Set Counter with Anytime Refinement
+# iascar (incremental answer set counter with anytime refinement)
 
 
 **iascar** is a propositional model counter tailored toward frequent counting
 under assumptions. The counter operates on _smooth deterministic decomposable
 negation normal forms_ (sd-DNNFs) or so called _compressed counting graphs_
 (CCGs).
+
+Find more background in [https://doi.org/10.48550/arXiv.2311.07233](https://doi.org/10.48550/arXiv.2311.07233).
 
 ## install & build
 * Install iascar via cargo `cargo install iascar`
