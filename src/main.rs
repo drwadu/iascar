@@ -10,9 +10,13 @@ use std::fs::read_to_string;
 use std::iter::Skip;
 use std::str::FromStr;
 
+#[allow(unused)]
 pub(crate) const AND: u8 = 1;
+#[allow(unused)]
 pub(crate) const OR: u8 = 0;
+#[allow(unused)]
 pub(crate) const SAND: &'static str = "*";
+#[allow(unused)]
 pub(crate) const SOR: &'static str = "+";
 
 fn read_assumptions(mut args: Skip<Args>) -> Vec<i32> {

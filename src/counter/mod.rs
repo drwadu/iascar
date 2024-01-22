@@ -1,3 +1,4 @@
+#[allow(unused)]
 #[cfg(not(feature = "seq"))]
 use rayon::prelude::*;
 use rug::Integer;
@@ -8,13 +9,16 @@ use std::str::FromStr;
 
 use crate::{SAND, SOR};
 
+#[allow(unused)]
 #[derive(Debug, Clone)]
 pub enum CounterError {
     ReadingError(String),
 }
 
+#[allow(unused)]
 pub type Result<T> = std::result::Result<T, CounterError>;
 
+#[allow(unused)]
 #[derive(Debug, Clone)]
 pub struct Counter {
     counting_graph: Vec<String>,
@@ -22,6 +26,7 @@ pub struct Counter {
     node_count: usize,
     overall_count: f64,
 }
+#[allow(unused)]
 impl Counter {
     pub fn new(ccg_filename: impl AsRef<Path>) -> Result<Self> {
         let dag = read_to_string(&ccg_filename)
@@ -195,6 +200,7 @@ impl Counter {
     }
 }
 
+#[allow(unused)]
 pub fn log10_count(count: Integer) -> f64 {
     count.to_f64().log10()
 }
