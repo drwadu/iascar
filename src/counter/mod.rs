@@ -1,6 +1,4 @@
 #[allow(unused)]
-#[cfg(not(feature = "seq"))]
-use rayon::prelude::*;
 use rug::Integer;
 use std::collections::{HashMap, HashSet};
 use std::fs::read_to_string;
@@ -154,10 +152,63 @@ impl Counter {
         count
     }
 
+    /// For each literal `l` among `literals` prints answer set count under `l`.
+    pub fn show_all(&self, literals: &[String], condition: &[String]) {
+        let mut counted = self.count(condition.iter());
+        for lit in literals {
+            let count = self.count(condition.iter().chain([lit]));
+            println!("{:.3} {lit}", log10_count(count));
+        }
+    }
+
+    /// Returns literal among `literals` which admits the highest answer set count.
+    ///
+    /// NOTE: literals are assumed to be facets.
+    pub fn find_max_among(&self, literals: &[String], condition: &[String]) -> Option<String> {
+        let mut counted = self.count(condition.iter());
+        let (mut count, mut l, bound): (Integer, Option<String>, Integer) =
+            (Integer::ZERO, None, counted - 1);
+        for lit in literals {
+            counted = self.count(condition.iter().chain([lit]));
+            if counted == bound {
+                return Some(lit.to_string());
+            }
+            if counted >= count {
+                count = counted;
+                l = Some(lit.to_string());
+            }
+        }
+
+        l
+    }
+
+    /// Returns literal among `literals` which admits the lowest answer set count.
+    ///
+    /// NOTE: literals are assumed to be facets.
+    pub fn find_min_among(&self, literals: &[String], condition: &[String]) -> Option<String> {
+        let mut counted = self.count(condition.iter());
+        let (mut count, mut l, bound): (Integer, Option<String>, Integer) =
+            (counted, None, Integer::ONE.clone());
+        for lit in literals {
+            counted = self.count(condition.iter().chain([lit]));
+            if counted == bound {
+                return Some(lit.to_string());
+            }
+            if counted <= count {
+                count = counted;
+                l = Some(lit.to_string());
+            }
+        }
+
+        l
+    }
+
+    /// Returns overall count.
     pub fn overall_count(&self) -> f64 {
         self.overall_count
     }
 
+    /// Returns facet count.
     pub fn facet_count<S: ToString>(&self, assume: impl Iterator<Item = S>) -> usize {
         let mut curr = self.mapping.keys().collect::<HashSet<_>>();
 
@@ -216,6 +267,118 @@ mod tests {
         println!("{:?}", counter.count(["~a"].iter()));
         println!("{:?}", counter.facet_count(["a"].iter()));
         println!("{:?}", counter.facet_count(["~a"].iter()));
+        Ok(())
+    }
+
+    #[test]
+    fn count_all() -> Result<()> {
+        let counter = Counter::new("examples/example.lp.as.cnf.nnf.ccg")?;
+        counter.show_all(&[
+                "a".to_owned(),
+                "~a".to_owned(),
+                "b".to_owned(),
+                "~b".to_owned(),
+                "c".to_owned(),
+                "~c".to_owned(),
+                "d".to_owned(),
+                "~d".to_owned(),
+                "f".to_owned(),
+                "~f".to_owned(),
+                "g".to_owned(),
+                "~g".to_owned(),
+                "h".to_owned(),
+                "~h".to_owned(),
+                "i".to_owned(),
+                "~i".to_owned(),
+            ], &[]);
+        Ok(())
+    }
+
+    #[test]
+    fn count_min_max() -> Result<()> {
+        let counter = Counter::new("examples/example.lp.as.cnf.nnf.ccg")?;
+        println!(
+            "empty min {:?}",
+            counter.find_min_among(&[
+                "a".to_owned(),
+                "~a".to_owned(),
+                "b".to_owned(),
+                "~b".to_owned(),
+                "c".to_owned(),
+                "~c".to_owned(),
+                "d".to_owned(),
+                "~d".to_owned(),
+                "f".to_owned(),
+                "~f".to_owned(),
+                "g".to_owned(),
+                "~g".to_owned(),
+                "h".to_owned(),
+                "~h".to_owned(),
+                "i".to_owned(),
+                "~i".to_owned(),
+            ], &[])
+        );
+        println!(
+            "empty max {:?}",
+            counter.find_max_among(&[
+                "a".to_owned(),
+                "~a".to_owned(),
+                "b".to_owned(),
+                "~b".to_owned(),
+                "c".to_owned(),
+                "~c".to_owned(),
+                "d".to_owned(),
+                "~d".to_owned(),
+                "f".to_owned(),
+                "~f".to_owned(),
+                "g".to_owned(),
+                "~g".to_owned(),
+                "h".to_owned(),
+                "~h".to_owned(),
+                "i".to_owned(),
+                "~i".to_owned(),
+            ], &[])
+        );
+        println!(
+            "min ~a {:?}",
+            counter.find_min_among(&[
+                "b".to_owned(),
+                "~b".to_owned(),
+                "c".to_owned(),
+                "~c".to_owned(),
+                "d".to_owned(),
+                "~d".to_owned(),
+                "f".to_owned(),
+                "~f".to_owned(),
+                "g".to_owned(),
+                "~g".to_owned(),
+                "h".to_owned(),
+                "~h".to_owned(),
+                "i".to_owned(),
+                "~i".to_owned(),
+            ], &["~a".to_owned()])
+        );
+        println!(
+            "max b {:?}",
+            counter.find_max_among(&[
+                "a".to_owned(),
+                "~a".to_owned(),
+                "c".to_owned(),
+                "~c".to_owned(),
+                "d".to_owned(),
+                "~d".to_owned(),
+                "f".to_owned(),
+                "~f".to_owned(),
+                "g".to_owned(),
+                "~g".to_owned(),
+                "h".to_owned(),
+                "~h".to_owned(),
+                "i".to_owned(),
+                "~i".to_owned(),
+            ], &[
+                "b".to_owned(),
+            ])
+        );
         Ok(())
     }
 }
