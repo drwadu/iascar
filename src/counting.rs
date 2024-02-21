@@ -3,6 +3,7 @@ use itertools::Itertools;
 #[cfg(not(feature = "seq"))]
 use rayon::prelude::*;
 use rug::Integer;
+use savan::nav::Navigator;
 use std::collections::HashSet;
 use std::fs::read_to_string;
 use std::path::Path;
@@ -10,6 +11,8 @@ use std::str::FromStr;
 
 pub fn count_on_sddnnf(filename: impl AsRef<Path>, assumptions: &[i32]) -> Integer {
     let nnf = read_to_string(&filename).unwrap_or_else(|_| "".to_string());
+
+    println!("c o a={:?}", assumptions);
 
     let mut lines = nnf.lines();
     let mut stats = lines
@@ -112,6 +115,8 @@ pub fn count_on_sddnnf(filename: impl AsRef<Path>, assumptions: &[i32]) -> Integ
 
 pub fn count_on_sddnnf_asp(filename: impl AsRef<Path>, assumptions: &[i32]) -> Integer {
     let nnf = read_to_string(&filename).unwrap_or_else(|_| "".to_string());
+
+    println!("c o a={:?}", assumptions);
 
     let mut lines = nnf.lines();
     let mut stats = lines
@@ -581,6 +586,162 @@ pub fn anytime_cg_count(
         i += 1;
     }
 
+    i -= 1;
+    if i % 2 == 0 {
+        println!("c o {:.2}+", i as f32 / n_cycles as f32);
+    } else {
+        println!("c o {:.2}-", i as f32 / n_cycles as f32);
+    }
+
+    count
+}
+
+pub fn anytime_cg_count_with_filtering(
+    ccg: impl AsRef<Path>,
+    cycles: std::str::Lines,
+    assumptions: &[i32],
+    depth: usize,
+) -> Integer {
+    let cycles_file = cycles.collect::<Vec<_>>();
+
+    let ccg_nodes = read_to_string(ccg)
+        .unwrap()
+        .lines()
+        .into_iter()
+        .filter(|l| !l.starts_with('c'))
+        .map(|s| s.to_string())
+        .collect::<Vec<_>>();
+
+    let mut count = count_on_ccg(&ccg_nodes, assumptions);
+
+    let mut n_unfiltered = 0;
+    let mut ucs = cycles_file
+        .iter()
+        .map(|l| {
+            n_unfiltered += 1;
+            l.split_whitespace()
+                .map(|i| i32::from_str(i).expect("error: reading ucs failed."))
+                .collect::<Vec<_>>()
+        })
+        .filter(|c| !assumptions.iter().any(|l| c.contains(&-l))) // prefiltering
+        .map(|mut uc| {
+            uc.extend(assumptions);
+            uc
+        })
+        .collect::<Vec<_>>();
+
+    let mut i = 1;
+    let n_cycles = ucs.len();
+
+    #[cfg(feature = "seq")]
+    print!("c o +seq");
+    #[cfg(not(feature = "seq"))]
+    print!("c o +par");
+    println!();
+
+    let d = if depth == 0 || depth > n_cycles {
+        n_cycles + 1
+    } else {
+        depth + 1
+    };
+    println!(
+        "c o d={:?} n={:?} p={:?} a={:?}",
+        d - 1,
+        n_unfiltered,
+        n_cycles,
+        assumptions
+    );
+
+    if count == 0 {
+        println!("c o UNSATISFIABLE");
+        return count;
+    } else {
+        println!("c b 0 {:.2}", count.to_f64().log10());
+    }
+
+    let mut prev = count.clone();
+
+    // TODO: for par, partition into and then push
+    //let (mut n_prev, mut n_next) = (0f64, ucs.len() as f64);
+    let mut filtered = ucs.len() as f64;
+    while i < d {
+        let p = ucs.len();
+        println!("c c {:?} {:.2}", i, p);
+        let (combs, mut effective_ucs) = ((0..p).combinations(i), vec![]); // FIX: ...
+
+        match i % 2 != 0 {
+            true =>
+            // -
+            {
+                // for (i, gamma) in combs.enumerate() {
+                for gamma in combs {
+                    let assumptions_ = gamma
+                        .iter()
+                        .map(|idx| unsafe { ucs.get_unchecked(*idx) })
+                        .fold(vec![], |mut a, v| {
+                            a.extend(v);
+                            a
+                        });
+                    let effect = count_on_ccg(&ccg_nodes, &assumptions_);
+                    if effect != 0 {
+                        count -= effect;
+                        effective_ucs.push(assumptions_);
+                    } else {
+                        filtered += 1.0;
+                    }
+                }
+            }
+            _ =>
+            // +
+            {
+                for gamma in combs {
+                    let assumptions_ = gamma
+                        .iter()
+                        .map(|idx| unsafe { ucs.get_unchecked(*idx) })
+                        .fold(vec![], |mut a, v| {
+                            a.extend(v);
+                            a
+                        });
+                    let effect = count_on_ccg(&ccg_nodes, &assumptions_);
+                    if effect != 0 {
+                        count += effect;
+                        effective_ucs.push(assumptions_);
+                    } else {
+                        filtered += 1.0;
+                    }
+                }
+            }
+        }
+        ucs = effective_ucs;
+        //println!("c f {:?} {:.2}", i, filtered.log10());
+        filtered = 0.0;
+        // println!("c o f {:.2}", n_next / n_prev);
+        // n_prev = n_next;
+        //n_next = 0.0;
+
+        #[cfg(feature = "verbose")]
+        {
+            let prevl10 = prev.clone().abs().to_f64().log10();
+            let countl10 = count.clone().abs().to_f64().log10();
+            let delta = (prevl10 - countl10).abs();
+            //println!("c o delta {:?} {:?} {:?} {:.2}", i, prev, count, delta);
+            if delta.is_nan() {
+                println!("c l {:?} 0", i);
+                println!("c b {:?} {:.2}", i, countl10);
+            } else {
+                println!("c l {:?} {:.2}", i, delta);
+                println!("c b {:?} {:.2}", i, countl10);
+            }
+        }
+        if prev == count {
+            break;
+        } else {
+            prev = count.clone()
+        }
+
+        i += 1;
+    }
+
     //i -= 1;
     if i % 2 == 0 {
         println!("c o {:.2}+", i as f32 / n_cycles as f32);
@@ -589,4 +750,33 @@ pub fn anytime_cg_count(
     }
 
     count
+}
+
+pub fn count_by_enumeration<S: ToString>(
+    lp_path: impl AsRef<Path>,
+    args: Vec<String>,
+    assumptions: impl Iterator<Item = S>,
+) -> usize {
+    let source = match read_to_string(lp_path) {
+        Ok(s) => s,
+        Err(err) => {
+            println!("error: {err}");
+            std::process::exit(-1)
+        }
+    };
+    let mut nav = match Navigator::new(source, args) {
+        Ok(n) => n,
+        Err(err) => {
+            println!("error: {err}");
+            std::process::exit(-1)
+        }
+    };
+
+    match nav.enumerate_solutions_quietly(None, assumptions) {
+        Ok(n) => n,
+        Err(err) => {
+            println!("error: {err}");
+            std::process::exit(-1)
+        }
+    }
 }

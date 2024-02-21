@@ -1,0 +1,22 @@
+name: build
+
+on:
+  push:
+    branches: [ "main", "next" ]
+  pull_request:
+    branches: [ "main", "next" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: build
+      run: cargo build --verbose
+    - name: build release
+      run: cargo build --release --verbose
