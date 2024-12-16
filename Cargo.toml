@@ -12,11 +12,13 @@ license = "MIT"
 rug = "1.16.0"
 itertools = "0.10.5"
 rayon = "1.5"
-clingo = { version = "0.7.2", features = ["static-linking"] }
-savan = "0.2.0"
+clingo = { version = "0.7.2", features = ["static-linking"], optional = true }
+savan = { version = "0.2.0", optional = true }
 thiserror = "1.0"
 
 [features]
+enumeration = ["savan"]
+compression = ["clingo"]
 prefilter = []
 seq = []
 
