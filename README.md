@@ -13,6 +13,9 @@ Find more background in [https://doi.org/10.48550/arXiv.2311.07233](https://doi.
 ## install & build
 * Install iascar via cargo `cargo install iascar`
 * by default iascar runs in parallel for incremental counting with anytime refinement; to avoid parallel execution, clone this repo and build iascar with `cargo build --release --features seq`
+* to use iascar as a counting graph compressor use the `compression` feature
+* to use iascar with enumeration use the `enumeration` feature
+
 ## quickstart
 1. download [lp2*-tools](https://research.ics.aalto.fi/software/asp/download/) and [c2d](http://reasoning.cs.ucla.edu/c2d/)
 2. set the paths to the respective tools in [build_nnf.sh](iascar/build_nnf.sh), which builds cnfs and nnfs for 

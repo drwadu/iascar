@@ -1,5 +1,7 @@
 #![deny(clippy::all)]
 
+
+#[cfg(feature = "compression")]
 mod compressor;
 mod counter;
 mod counting;
@@ -63,6 +65,7 @@ fn main() {
                     }
                 },
             ),
+        #[cfg(feature = "compression")]
         Some("-com") => args
             .next()
             .and_then(|s| if s == "-lp" { args.next() } else { None })
@@ -179,6 +182,7 @@ fn main() {
                     }
                 },
             ),
+        #[cfg(feature = "enumeration")]
         Some("-enum") => args
             .next()
             .and_then(|s| if s.trim() == "-in" { args.next() } else { None })

@@ -1,3 +1,4 @@
+#[cfg(feature = "compression")]
 use clingo::{Part, SolverLiteral};
 use rug::Integer;
 use std::collections::{HashMap, HashSet};
@@ -13,6 +14,7 @@ const OR: u8 = 0;
 #[derive(Error, Debug)]
 pub enum CompressorError {
     #[error("clingo error")]
+    #[cfg(feature = "compression")]
     Clingo(#[from] clingo::ClingoError),
     #[error("io error")]
     Io(#[from] std::io::Error),
@@ -24,6 +26,7 @@ pub enum CompressorError {
 
 pub type Result<T> = std::result::Result<T, CompressorError>;
 
+#[cfg(feature = "compression")]
 pub fn compress_<S: AsRef<Path>>(nnf_path: S, lp_path: S, cnf_path: S) -> Result<()> {
     let cnf_mappings = read_cnf_mappings_(cnf_path)?;
     let lp = read_to_string(lp_path)?;
@@ -247,6 +250,7 @@ pub fn compress_<S: AsRef<Path>>(nnf_path: S, lp_path: S, cnf_path: S) -> Result
     write(&stats, &transpilation, &cnf_mappings)
 }
 
+#[cfg(feature = "compression")]
 pub fn compress(nnf_path: String) -> Result<()> {
     let name = nnf_path.split('.').next().ok_or(CompressorError::None)?;
     let lp_path = &format!("{}.lp", name);

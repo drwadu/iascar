@@ -3,6 +3,7 @@ use itertools::Itertools;
 #[cfg(not(feature = "seq"))]
 use rayon::prelude::*;
 use rug::Integer;
+#[cfg(feature = "enumeration")]
 use savan::nav::Navigator;
 use std::collections::HashSet;
 use std::fs::read_to_string;
@@ -752,6 +753,7 @@ pub fn anytime_cg_count_with_filtering(
     count
 }
 
+#[cfg(feature = "enumeration")]
 pub fn count_by_enumeration<S: ToString>(
     lp_path: impl AsRef<Path>,
     args: Vec<String>,
